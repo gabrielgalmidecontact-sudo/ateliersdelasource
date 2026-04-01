@@ -1,7 +1,6 @@
 'use client'
 // src/features/auth/MemberNewsletterPage.tsx
-import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { useState, useEffect } from 'react'
 import { Container } from '@/components/ui/Container'
 import { Button } from '@/components/ui/Button'
 import { ArrowLeft, Bell, BellOff, CheckCircle } from 'lucide-react'
@@ -17,13 +16,15 @@ export function MemberNewsletterPage() {
   const [subscribed, setSubscribed] = useState(true)
   const [prefs, setPrefs] = useState({ stages: true, spectacles: true, blog: false, amelie: false })
   const [saved, setSaved] = useState(false)
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => { setVisible(true) }, [])
 
   function togglePref(key: string) {
     setPrefs(p => ({ ...p, [key]: !p[key as keyof typeof p] }))
   }
 
   async function handleSave() {
-    // TODO: Save preferences via API
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
   }
@@ -41,11 +42,9 @@ export function MemberNewsletterPage() {
 
       <div className="bg-[#FAF6EF] py-16">
         <Container size="sm">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+          <div
             className="space-y-5"
+            style={{ opacity: visible ? 1 : 0, transform: visible ? 'none' : 'translateY(20px)', transition: 'opacity 0.5s ease, transform 0.5s ease' }}
           >
             {/* Global toggle */}
             <div className="bg-white rounded-sm border border-[#D4C4A8] p-6">
@@ -91,18 +90,17 @@ export function MemberNewsletterPage() {
                     </div>
                   ))}
                 </div>
-
                 <div className="mt-5 flex items-center gap-4">
                   <Button variant="primary" size="sm" onClick={handleSave}>Enregistrer mes préférences</Button>
                   {saved && (
-                    <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-1.5 text-sm font-sans text-[#4A5E3A]">
+                    <span className="flex items-center gap-1.5 text-sm font-sans text-[#4A5E3A]">
                       <CheckCircle size={14} /> Enregistré !
-                    </motion.span>
+                    </span>
                   )}
                 </div>
               </div>
             )}
-          </motion.div>
+          </div>
         </Container>
       </div>
     </>

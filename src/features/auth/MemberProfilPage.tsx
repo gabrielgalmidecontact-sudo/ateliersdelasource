@@ -1,7 +1,6 @@
-// src/features/auth/MemberProfilPage.tsx
 'use client'
-import { useState } from 'react'
-import { motion } from 'framer-motion'
+// src/features/auth/MemberProfilPage.tsx
+import { useState, useEffect } from 'react'
 import { Container } from '@/components/ui/Container'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
@@ -9,7 +8,10 @@ import { ArrowLeft, CheckCircle } from 'lucide-react'
 
 export function MemberProfilPage() {
   const [saved, setSaved] = useState(false)
+  const [visible, setVisible] = useState(false)
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '' })
+
+  useEffect(() => { setVisible(true) }, [])
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setForm(p => ({ ...p, [e.target.name]: e.target.value }))
@@ -33,7 +35,9 @@ export function MemberProfilPage() {
       </div>
       <div className="py-16" style={{ backgroundColor: '#FAF6EF' }}>
         <Container size="sm">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          <div
+            style={{ opacity: visible ? 1 : 0, transform: visible ? 'none' : 'translateY(20px)', transition: 'opacity 0.5s ease, transform 0.5s ease' }}
+          >
             <div className="bg-white p-8" style={{ border: '1px solid #D4C4A8', borderRadius: '2px' }}>
               <h2 className="font-serif mb-6" style={{ fontSize: '1.25rem', color: '#5C3D2E' }}>Informations personnelles</h2>
               <form onSubmit={handleSubmit} className="space-y-5">
@@ -58,7 +62,7 @@ export function MemberProfilPage() {
                 <span className="font-medium" style={{ color: '#5C3D2E' }}>Note :</span> La connexion sécurisée sera disponible prochainement lors de l&apos;ouverture de l&apos;espace membre.
               </p>
             </div>
-          </motion.div>
+          </div>
         </Container>
       </div>
     </>

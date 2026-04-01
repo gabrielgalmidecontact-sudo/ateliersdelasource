@@ -1,11 +1,45 @@
 'use client'
 // src/features/contact/ContactPage.tsx
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { Mail, Phone, MapPin, CheckCircle } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Mail, MapPin, CheckCircle } from 'lucide-react'
 import { Container } from '@/components/ui/Container'
 import { Input, Textarea } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+
+function FadeIn({ children, delay = 0, className = '', slideX = false }: {
+  children: React.ReactNode
+  delay?: number
+  className?: string
+  slideX?: boolean
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) { setVisible(true); return }
+    const obs = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect() } },
+      { threshold: 0.05 }
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
+
+  return (
+    <div
+      ref={ref}
+      className={className}
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'none' : slideX ? 'translateX(24px)' : 'translateY(24px)',
+        transition: `opacity 0.6s ease ${delay}ms, transform 0.6s ease ${delay}ms`,
+      }}
+    >
+      {children}
+    </div>
+  )
+}
 
 export function ContactPage() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '' })
@@ -42,18 +76,13 @@ export function ContactPage() {
       {/* Hero */}
       <div className="pt-32 pb-16 bg-[#5C3D2E]">
         <Container>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center"
-          >
+          <FadeIn className="text-center">
             <p className="text-xs font-sans tracking-[0.25em] uppercase text-[#C8912A] mb-4">Nous écrire</p>
             <h1 className="font-serif text-4xl md:text-5xl text-[#F5EDD8] mb-4">Contact</h1>
             <p className="text-base font-sans text-[#C8A888] max-w-md mx-auto">
               Une question, un projet, une envie de participer ? Nous vous répondons avec plaisir.
             </p>
-          </motion.div>
+          </FadeIn>
         </Container>
       </div>
 
@@ -62,20 +91,11 @@ export function ContactPage() {
         <Container>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
             {/* Form */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className="lg:col-span-2"
-            >
+            <FadeIn delay={100} className="lg:col-span-2">
               <h2 className="font-serif text-2xl text-[#5C3D2E] mb-8">Envoyer un message</h2>
 
               {status === 'success' ? (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="flex flex-col items-center gap-4 py-16 text-center"
-                >
+                <div className="flex flex-col items-center gap-4 py-16 text-center">
                   <CheckCircle size={56} className="text-[#4A5E3A]" />
                   <h3 className="font-serif text-2xl text-[#5C3D2E]">Message envoyé !</h3>
                   <p className="font-sans text-[#7A6355] max-w-sm">
@@ -87,7 +107,7 @@ export function ContactPage() {
                   >
                     Envoyer un autre message
                   </Button>
-                </motion.div>
+                </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-5" noValidate>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
@@ -148,14 +168,10 @@ export function ContactPage() {
                   </Button>
                 </form>
               )}
-            </motion.div>
+            </FadeIn>
 
             {/* Sidebar info */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-            >
+            <FadeIn delay={200} slideX>
               <div className="sticky top-24 space-y-6">
                 <div>
                   <h2 className="font-serif text-xl text-[#5C3D2E] mb-5">Informations</h2>
@@ -188,7 +204,7 @@ export function ContactPage() {
                   </p>
                 </div>
               </div>
-            </motion.div>
+            </FadeIn>
           </div>
         </Container>
       </div>

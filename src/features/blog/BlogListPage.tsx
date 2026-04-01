@@ -1,6 +1,6 @@
 'use client'
 // src/features/blog/BlogListPage.tsx
-import { motion } from 'framer-motion'
+import { useRef, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Calendar, ArrowRight } from 'lucide-react'
 import { Container } from '@/components/ui/Container'
@@ -35,15 +35,30 @@ const posts = [
 const MONTHS_FR = ['jan', 'fév', 'mar', 'avr', 'mai', 'jun', 'jul', 'aoû', 'sep', 'oct', 'nov', 'déc']
 
 function PostCard({ post, index }: { post: typeof posts[0]; index: number }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [visible, setVisible] = useState(false)
   const date = new Date(post.publishedAt)
   const formattedDate = `${date.getDate()} ${MONTHS_FR[date.getMonth()]} ${date.getFullYear()}`
 
+  useEffect(() => {
+    const el = ref.current
+    if (!el) { setVisible(true); return }
+    const obs = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect() } },
+      { threshold: 0.1 }
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-50px' }}
-      transition={{ duration: 0.5, delay: (index % 3) * 0.1 }}
+    <div
+      ref={ref}
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'none' : 'translateY(24px)',
+        transition: `opacity 0.5s ease ${index * 80}ms, transform 0.5s ease ${index * 80}ms`,
+      }}
     >
       <Link href={`/blog/${post.slug}`} className="group block h-full" aria-label={`Lire : ${post.title}`}>
         <article className="h-full flex flex-col bg-white rounded-sm border border-[#D4C4A8] hover:border-[#C8912A]/50 hover:shadow-lg transition-all duration-300 overflow-hidden">
@@ -75,27 +90,38 @@ function PostCard({ post, index }: { post: typeof posts[0]; index: number }) {
           </div>
         </article>
       </Link>
-    </motion.div>
+    </div>
   )
 }
 
 export function BlogListPage() {
+  const heroRef = useRef<HTMLDivElement>(null)
+  const [heroVisible, setHeroVisible] = useState(false)
+
+  useEffect(() => {
+    // Hero is above the fold, show immediately
+    setHeroVisible(true)
+  }, [])
+
   return (
     <>
       <div className="pt-32 pb-16 bg-[#5C3D2E]">
         <Container>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+          <div
+            ref={heroRef}
             className="text-center"
+            style={{
+              opacity: heroVisible ? 1 : 0,
+              transform: heroVisible ? 'none' : 'translateY(24px)',
+              transition: 'opacity 0.6s ease, transform 0.6s ease',
+            }}
           >
             <p className="text-xs font-sans tracking-[0.25em] uppercase text-[#C8912A] mb-4">Réflexions</p>
             <h1 className="font-serif text-4xl md:text-5xl text-[#F5EDD8] mb-4">Blog &amp; Actualités</h1>
             <p className="text-base font-sans text-[#C8A888] max-w-lg mx-auto">
               Articles, témoignages et réflexions sur le développement personnel, le théâtre, la biographie et la vie intérieure.
             </p>
-          </motion.div>
+          </div>
         </Container>
       </div>
 

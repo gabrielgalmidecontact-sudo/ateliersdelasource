@@ -1,6 +1,6 @@
 'use client'
 // src/features/evenements/EventDetailPage.tsx
-import { motion } from 'framer-motion'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Calendar, MapPin, Users, Tag, ArrowLeft, Mail } from 'lucide-react'
 import { Container } from '@/components/ui/Container'
@@ -32,6 +32,7 @@ function formatContent(text: string) {
 }
 
 export function EventDetailPage({ event }: { event: EventData }) {
+  const [visible, setVisible] = useState(false)
   const startDate = new Date(event.startDate)
   const endDate = new Date(event.endDate)
   const isSameDay = event.startDate === event.endDate
@@ -47,6 +48,8 @@ export function EventDetailPage({ event }: { event: EventData }) {
     Formation: 'ghost',
   }
 
+  useEffect(() => { setVisible(true) }, [])
+
   return (
     <>
       {/* Hero */}
@@ -57,10 +60,12 @@ export function EventDetailPage({ event }: { event: EventData }) {
         </div>
         <div className="relative z-10 w-full pb-12 pt-24">
           <Container>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7 }}
+            <div
+              style={{
+                opacity: visible ? 1 : 0,
+                transform: visible ? 'none' : 'translateY(20px)',
+                transition: 'opacity 0.7s ease, transform 0.7s ease',
+              }}
             >
               <Link href="/evenements" className="inline-flex items-center gap-1.5 text-xs font-sans text-white/70 hover:text-white mb-4 transition-colors group">
                 <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
@@ -73,7 +78,7 @@ export function EventDetailPage({ event }: { event: EventData }) {
               <h1 className="font-serif text-3xl sm:text-4xl text-white leading-tight max-w-2xl">
                 {event.title}
               </h1>
-            </motion.div>
+            </div>
           </Container>
         </div>
       </section>
@@ -83,11 +88,13 @@ export function EventDetailPage({ event }: { event: EventData }) {
         <Container>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
             {/* Main */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
+            <div
               className="lg:col-span-2"
+              style={{
+                opacity: visible ? 1 : 0,
+                transform: visible ? 'none' : 'translateY(20px)',
+                transition: 'opacity 0.6s ease 100ms, transform 0.6s ease 100ms',
+              }}
             >
               <p className="text-lg font-sans text-[#7A6355] leading-relaxed mb-8 italic">
                 {event.excerpt}
@@ -118,14 +125,16 @@ export function EventDetailPage({ event }: { event: EventData }) {
                   </>
                 )}
               </div>
-            </motion.div>
+            </div>
 
             {/* Sidebar */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
+            <div
               className="lg:col-span-1"
+              style={{
+                opacity: visible ? 1 : 0,
+                transform: visible ? 'none' : 'translateX(20px)',
+                transition: 'opacity 0.6s ease 200ms, transform 0.6s ease 200ms',
+              }}
             >
               <div className="sticky top-24">
                 <div className="bg-white rounded-sm border border-[#D4C4A8] p-6">
@@ -164,7 +173,7 @@ export function EventDetailPage({ event }: { event: EventData }) {
                   </div>
                 </div>
               </div>
-            </motion.div>
+            </div>
           </div>
         </Container>
       </div>

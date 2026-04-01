@@ -1,6 +1,6 @@
 'use client'
 // src/features/auth/MemberDashboard.tsx
-import { motion } from 'framer-motion'
+import { useEffect, useState } from 'react'
 import { Container } from '@/components/ui/Container'
 import { Button } from '@/components/ui/Button'
 import { User, Calendar, Bell, Lock } from 'lucide-react'
@@ -13,6 +13,9 @@ const menuItems = [
 ]
 
 export function MemberDashboard() {
+  const [visible, setVisible] = useState(false)
+  useEffect(() => { setVisible(true) }, [])
+
   return (
     <>
       <div className="pt-32 pb-16 bg-[#5C3D2E]">
@@ -27,10 +30,9 @@ export function MemberDashboard() {
       <div className="bg-[#FAF6EF] py-16">
         <Container size="md">
           {/* Auth notice */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+          <div
             className="mb-10 p-6 bg-[#F5EDD8] border border-[#D4C4A8] rounded-sm"
+            style={{ opacity: visible ? 1 : 0, transform: visible ? 'none' : 'translateY(20px)', transition: 'opacity 0.5s ease, transform 0.5s ease' }}
           >
             <div className="flex items-start gap-3">
               <Lock size={20} className="text-[#C8912A] flex-shrink-0 mt-0.5" />
@@ -41,30 +43,26 @@ export function MemberDashboard() {
                 </p>
               </div>
             </div>
-          </motion.div>
+          </div>
 
           {/* Menu */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {menuItems.map((item, i) => (
-              <motion.div
+              <div
                 key={item.href}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
+                style={{ opacity: visible ? 1 : 0, transform: visible ? 'none' : 'translateY(20px)', transition: `opacity 0.5s ease ${i * 80}ms, transform 0.5s ease ${i * 80}ms` }}
               >
                 <Link href={item.href} className="group block p-6 bg-white rounded-sm border border-[#D4C4A8] hover:border-[#C8912A]/50 hover:shadow-md transition-all duration-200">
                   <div className="text-[#C8912A] mb-3">{item.icon}</div>
                   <h2 className="font-serif text-lg text-[#5C3D2E] group-hover:text-[#C8912A] transition-colors mb-1">{item.label}</h2>
                   <p className="text-xs font-sans text-[#7A6355]">{item.description}</p>
                 </Link>
-              </motion.div>
+              </div>
             ))}
           </div>
 
           <div className="mt-10 text-center">
-            <Button href="/activites" variant="outline" size="md">
-              Découvrir les activités
-            </Button>
+            <Button href="/activites" variant="outline" size="md">Découvrir les activités</Button>
           </div>
         </Container>
       </div>

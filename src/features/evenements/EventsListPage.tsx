@@ -1,13 +1,11 @@
 'use client'
 // src/features/evenements/EventsListPage.tsx
-import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import { Calendar, MapPin, ArrowRight, FileText, Filter } from 'lucide-react'
+import { Calendar, MapPin, ArrowRight, Filter } from 'lucide-react'
 import { Container } from '@/components/ui/Container'
 import { Badge } from '@/components/ui/Badge'
 
-const MONTHS_FR = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
 const MONTHS_SHORT = ['jan', 'fév', 'mar', 'avr', 'mai', 'jun', 'jul', 'aoû', 'sep', 'oct', 'nov', 'déc']
 
 const allEvents = [
@@ -73,18 +71,33 @@ const typeColors: Record<string, 'ocre' | 'vert' | 'brun' | 'ghost'> = {
 }
 
 function EventCard({ event, index }: { event: typeof allEvents[0]; index: number }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [visible, setVisible] = useState(false)
   const startDate = new Date(event.startDate)
   const day = startDate.getDate().toString().padStart(2, '0')
   const month = MONTHS_SHORT[startDate.getMonth()]
   const year = startDate.getFullYear()
   const isPast = startDate < new Date()
 
+  useEffect(() => {
+    const el = ref.current
+    if (!el) { setVisible(true); return }
+    const obs = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect() } },
+      { threshold: 0.05 }
+    )
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-50px' }}
-      transition={{ duration: 0.5, delay: (index % 2) * 0.1 }}
+    <div
+      ref={ref}
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'none' : 'translateY(24px)',
+        transition: `opacity 0.5s ease ${(index % 2) * 80}ms, transform 0.5s ease ${(index % 2) * 80}ms`,
+      }}
     >
       <Link href={`/evenements/${event.slug}`} className="group block" aria-label={`Voir : ${event.title}`}>
         <article className={`flex gap-0 rounded-sm border overflow-hidden transition-all duration-300 hover:shadow-lg ${isPast ? 'opacity-60 border-[#D4C4A8]' : 'border-[#D4C4A8] hover:border-[#C8912A]/60'} bg-white`}>
@@ -141,7 +154,7 @@ function EventCard({ event, index }: { event: typeof allEvents[0]; index: number
           </div>
         </article>
       </Link>
-    </motion.div>
+    </div>
   )
 }
 
@@ -149,27 +162,32 @@ const EVENT_TYPES = ['Tous', 'Stage', 'Atelier', 'Spectacle', 'Formation']
 
 export function EventsListPage() {
   const [filter, setFilter] = useState('Tous')
+  const [heroVisible, setHeroVisible] = useState(false)
   const filtered = filter === 'Tous' ? allEvents : allEvents.filter(e => e.type === filter)
   const upcoming = filtered.filter(e => new Date(e.startDate) >= new Date())
   const past = filtered.filter(e => new Date(e.startDate) < new Date())
+
+  useEffect(() => { setHeroVisible(true) }, [])
 
   return (
     <>
       {/* Hero */}
       <div className="pt-32 pb-16 bg-[#5C3D2E]">
         <Container>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+          <div
             className="text-center"
+            style={{
+              opacity: heroVisible ? 1 : 0,
+              transform: heroVisible ? 'none' : 'translateY(24px)',
+              transition: 'opacity 0.6s ease, transform 0.6s ease',
+            }}
           >
             <p className="text-xs font-sans tracking-[0.25em] uppercase text-[#C8912A] mb-4">Agenda</p>
             <h1 className="font-serif text-4xl md:text-5xl text-[#F5EDD8] mb-4">Stages &amp; Événements</h1>
             <p className="text-base font-sans text-[#C8A888] max-w-xl mx-auto">
               Retrouvez l&apos;ensemble de nos prochains stages, ateliers et spectacles.
             </p>
-          </motion.div>
+          </div>
         </Container>
       </div>
 

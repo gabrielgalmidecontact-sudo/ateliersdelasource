@@ -1,6 +1,6 @@
 'use client'
 // src/features/blog/BlogDetailPage.tsx
-import { motion } from 'framer-motion'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Calendar, ArrowLeft } from 'lucide-react'
 import { Container } from '@/components/ui/Container'
@@ -18,8 +18,13 @@ interface PostData {
 }
 
 export function BlogDetailPage({ post }: { post: PostData }) {
+  const [visible, setVisible] = useState(false)
   const date = new Date(post.publishedAt)
   const formattedDate = `${date.getDate()} ${MONTHS_FR[date.getMonth()]} ${date.getFullYear()}`
+
+  useEffect(() => {
+    setVisible(true)
+  }, [])
 
   return (
     <>
@@ -31,10 +36,12 @@ export function BlogDetailPage({ post }: { post: PostData }) {
         </div>
         <div className="relative z-10 w-full pb-12 pt-24">
           <Container size="md">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7 }}
+            <div
+              style={{
+                opacity: visible ? 1 : 0,
+                transform: visible ? 'none' : 'translateY(20px)',
+                transition: 'opacity 0.7s ease, transform 0.7s ease',
+              }}
             >
               <Link href="/blog" className="inline-flex items-center gap-1.5 text-xs font-sans text-white/70 hover:text-white mb-4 transition-colors group">
                 <ArrowLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
@@ -49,7 +56,7 @@ export function BlogDetailPage({ post }: { post: PostData }) {
                 <span>·</span>
                 <span>Par {post.author}</span>
               </div>
-            </motion.div>
+            </div>
           </Container>
         </div>
       </section>
@@ -57,10 +64,12 @@ export function BlogDetailPage({ post }: { post: PostData }) {
       {/* Content */}
       <div className="bg-[#FAF6EF] py-16 md:py-24">
         <Container size="sm">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
+          <div
+            style={{
+              opacity: visible ? 1 : 0,
+              transform: visible ? 'none' : 'translateY(20px)',
+              transition: 'opacity 0.6s ease 100ms, transform 0.6s ease 100ms',
+            }}
           >
             {/* Lead */}
             <p className="text-lg font-sans text-[#7A6355] leading-relaxed mb-8 italic">
@@ -92,7 +101,7 @@ export function BlogDetailPage({ post }: { post: PostData }) {
                 <p className="text-xs font-sans text-[#7A6355]">Comédien, thérapeute, Les Ateliers de la Source</p>
               </div>
             </div>
-          </motion.div>
+          </div>
         </Container>
       </div>
     </>
