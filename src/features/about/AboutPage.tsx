@@ -1,0 +1,114 @@
+'use client'
+// src/features/about/AboutPage.tsx
+import { motion } from 'framer-motion'
+import { Container } from '@/components/ui/Container'
+import { Button } from '@/components/ui/Button'
+
+export function AboutPage() {
+  return (
+    <>
+      {/* Hero */}
+      <div className="pt-32 pb-16 bg-[#5C3D2E]">
+        <Container>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-center"
+          >
+            <p className="text-xs font-sans tracking-[0.25em] uppercase text-[#C8912A] mb-4">Le lieu</p>
+            <h1 className="font-serif text-4xl md:text-5xl text-[#F5EDD8]">À propos</h1>
+          </motion.div>
+        </Container>
+      </div>
+
+      {/* About content */}
+      <div className="bg-[#FAF6EF] py-16 md:py-24">
+        <Container size="md">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+            {/* Text */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+            >
+              <p className="text-xs font-sans uppercase tracking-widest text-[#C8912A] mb-3">L&apos;histoire</p>
+              <h2 className="font-serif text-3xl text-[#5C3D2E] mb-6">Les Ateliers de la Source</h2>
+              <div className="space-y-4 font-sans text-[#2D1F14] text-sm leading-relaxed">
+                <p>
+                  Les Ateliers de la Source sont un espace de rencontre, de création et de transformation.
+                  Un lieu où des propositions humaines, profondes et vivantes viennent à la rencontre de chacun.
+                </p>
+                <p>
+                  Gabriel et Amélie accueillent dans ce lieu tout ce qui touche au développement personnel, à l&apos;expression artistique, à la biographie, et au soin du corps.
+                </p>
+                <p>
+                  L&apos;idée centrale est simple : chacun porte en lui une source. Le travail proposé ici est d&apos;aider cette source à couler plus librement.
+                </p>
+              </div>
+            </motion.div>
+
+            {/* Gabriel */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              <div className="rounded-sm overflow-hidden">
+                <img
+                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80"
+                  alt="Gabriel"
+                  className="w-full aspect-[4/3] object-cover"
+                />
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Gabriel detail */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="mt-20 pt-16 border-t border-[#D4C4A8]"
+          >
+            <p className="text-xs font-sans uppercase tracking-widest text-[#C8912A] mb-3">Gabriel</p>
+            <h2 className="font-serif text-2xl text-[#5C3D2E] mb-5">Comédien, thérapeute, conteur</h2>
+            <div className="space-y-4 font-sans text-sm text-[#2D1F14] leading-relaxed max-w-2xl">
+              <p>
+                Gabriel est comédien de formation. Il propose des stages de développement personnel (Théâtre des Doubles Karmiques), des entretiens biographiques, des ateliers d&apos;expression parlée et corporelle, ainsi que des spectacles (Rêves à 100 000 euros, La Vision de Dante).
+              </p>
+              <p>
+                Formé pendant 3 ans à l&apos;accompagnement biographique auprès de Cyr Boé, il mêle dans son travail une approche artistique et thérapeutique, toujours au service de la transformation personnelle.
+              </p>
+            </div>
+          </motion.div>
+
+          {/* Amélie detail */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="mt-16 pt-16 border-t border-[#D4C4A8]"
+          >
+            <p className="text-xs font-sans uppercase tracking-widest text-[#C8912A] mb-3">Amélie</p>
+            <h2 className="font-serif text-2xl text-[#5C3D2E] mb-5">Praticienne, hôte du lieu</h2>
+            <div className="space-y-4 font-sans text-sm text-[#2D1F14] leading-relaxed max-w-2xl">
+              <p>
+                Amélie accueille les participants et propose des soins corporels dans son espace dédié, ainsi que des informations pour l&apos;hébergement et l&apos;accès au lieu.
+              </p>
+              <p className="text-[#7A6355] italic">
+                Ses propositions détaillées seront disponibles prochainement, dès l&apos;ouverture de son espace (prévue début juin).
+              </p>
+            </div>
+          </motion.div>
+
+          <div className="mt-12 text-center">
+            <Button href="/contact" variant="primary" size="md">Nous contacter</Button>
+          </div>
+        </Container>
+      </div>
+    </>
+  )
+}
