@@ -2,6 +2,7 @@
 import type { Metadata } from 'next'
 import { Lora, Inter } from 'next/font/google'
 import './globals.css'
+import { AuthProvider } from '@/lib/auth/AuthContext'
 
 const lora = Lora({
   subsets: ['latin'],
@@ -41,7 +42,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="theme-color" content="#5C3D2E" />
       </head>
       <body className="font-sans antialiased bg-creme text-text">
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   )
