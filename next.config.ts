@@ -6,6 +6,9 @@ const nextConfig: NextConfig = {
     // Type checking is done separately. Skip during build to keep it fast.
     ignoreBuildErrors: true,
   },
+  // Désactiver Turbopack pour le build (utiliser webpack classique)
+  // Évite les panics Turbopack sur CSS en production
+  experimental: {},
   images: {
     remotePatterns: [
       {
