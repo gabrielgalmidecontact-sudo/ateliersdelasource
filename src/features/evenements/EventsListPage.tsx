@@ -103,7 +103,7 @@ function normalizeSanityEvent(e: Event): DisplayEvent {
     type: e.type ?? 'Stage',
     startDate,
     endDate,
-    location: typeof e.location === 'string' ? e.location : ((e.location as { name?: string })?.name ?? ''),
+    location: typeof e.location === 'string' ? e.location : (e.location != null ? (e.location as unknown as { name?: string })?.name ?? '' : ''),
     owner: ownerName,
     priceLabel: e.priceLabel ?? '',
     excerpt: e.excerpt ?? '',

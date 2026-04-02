@@ -21,18 +21,18 @@ export async function POST(req: NextRequest) {
     // Revalidate selon le type de document Sanity modifié
     switch (_type) {
       case 'activity':
-        revalidateTag('activities')
+        revalidateTag('activities', 'default')
         revalidatePath('/activites', 'page')
         revalidatePath('/activites/[slug]', 'page')
         break
       case 'event':
-        revalidateTag('events')
+        revalidateTag('events', 'default')
         revalidatePath('/evenements', 'page')
         revalidatePath('/evenements/[slug]', 'page')
         revalidatePath('/', 'page') // homepage featured events
         break
       case 'post':
-        revalidateTag('posts')
+        revalidateTag('posts', 'default')
         revalidatePath('/blog', 'page')
         revalidatePath('/blog/[slug]', 'page')
         break

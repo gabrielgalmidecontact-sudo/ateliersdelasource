@@ -284,7 +284,7 @@ function StageCard({ stage, token, onUpdate }: { stage: StageWithNotes; token: s
                   <div key={note.id} className="p-3 bg-[#FAF6EF] rounded-sm border border-[#D4C4A8]/50">
                     <div className="flex items-center gap-2 mb-1">
                       <p className="text-sm font-sans font-medium text-[#5C3D2E]">{note.title}</p>
-                      {note.is_private && <EyeOff size={12} className="text-[#7A6355]" title="Note privée" />}
+                      {note.is_private && <EyeOff size={12} className="text-[#7A6355]" aria-label="Note privée" />}
                     </div>
                     <p className="text-xs font-sans text-[#7A6355] leading-relaxed">{note.content}</p>
                   </div>

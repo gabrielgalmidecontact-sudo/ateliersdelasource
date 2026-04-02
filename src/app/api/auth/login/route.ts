@@ -1,6 +1,6 @@
 // src/app/api/auth/login/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase/server'
+import { createAuthClient, createServerClient } from '@/lib/supabase/server'
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,15 +10,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email et mot de passe requis' }, { status: 400 })
     }
 
-    const supabase = createServerClient()
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    // ① Authentification via le client anon (pas de session persistée sur le service client)
+    const authClient = createAuthClient()
+    const { data, error } = await authClient.auth.signInWithPassword({ email, password })
 
     if (error) {
       return NextResponse.json({ error: 'Email ou mot de passe incorrect' }, { status: 401 })
     }
 
-    // Récupérer le profil avec le rôle
-    const { data: profile } = await supabase
+    // ② Récupération du profil via un client service_role SÉPARÉ (bypass RLS sans recursion)
+    const adminClient = createServerClient()
+    const { data: profile } = await adminClient
       .from('profiles')
       .select('role, first_name, last_name')
       .eq('id', data.user.id)

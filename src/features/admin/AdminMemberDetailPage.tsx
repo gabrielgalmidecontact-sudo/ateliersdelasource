@@ -55,11 +55,16 @@ export function AdminMemberDetailPage({ memberId }: { memberId: string }) {
   const [visiblePage, setVisiblePage] = useState(false)
   // Modal pour ajouter un stage
   const [stageModal, setStageModal] = useState(false)
-  const [stageForm, setStageForm] = useState({
+  const [stageForm, setStageForm] = useState<{
+    stage_title: string
+    stage_date: string
+    trainer: string
+    status: 'upcoming' | 'completed' | 'cancelled'
+  }>({
     stage_title: '',
     stage_date: new Date().toISOString().split('T')[0],
     trainer: 'Gabriel',
-    status: 'upcoming' as const,
+    status: 'upcoming',
   })
   const [savingStage, setSavingStage] = useState(false)
 
@@ -300,8 +305,8 @@ export function AdminMemberDetailPage({ memberId }: { memberId: string }) {
                             <div className="flex items-center gap-2 mb-1">
                               <span className="text-xs font-medium text-[#5C3D2E]">{note.title}</span>
                               {note.is_private
-                                ? <EyeOff size={11} className="text-[#7A6355]" title="Note privée" />
-                                : <Eye size={11} className="text-[#4A5E3A]" title="Note partagée" />}
+                                ? <EyeOff size={11} className="text-[#7A6355]" aria-label="Note privée" />
+                                : <Eye size={11} className="text-[#4A5E3A]" aria-label="Note partagée" />}
                             </div>
                             <p className="text-xs font-sans text-[#7A6355] leading-relaxed">{note.content}</p>
                           </div>

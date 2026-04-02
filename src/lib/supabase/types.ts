@@ -1,41 +1,7 @@
 // src/lib/supabase/types.ts
-// Types TypeScript générés depuis le schéma Supabase
+// Types TypeScript pour Supabase — Les Ateliers de la Source
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
-
-export interface Database {
-  public: {
-    Tables: {
-      profiles: {
-        Row: Profile
-        Insert: Omit<Profile, 'created_at' | 'updated_at'>
-        Update: Partial<Omit<Profile, 'id' | 'created_at'>>
-      }
-      stage_logs: {
-        Row: StageLog
-        Insert: Omit<StageLog, 'id' | 'created_at'>
-        Update: Partial<Omit<StageLog, 'id' | 'created_at'>>
-      }
-      member_notes: {
-        Row: MemberNote
-        Insert: Omit<MemberNote, 'id' | 'created_at' | 'updated_at'>
-        Update: Partial<Omit<MemberNote, 'id' | 'created_at'>>
-      }
-      trainer_notes: {
-        Row: TrainerNote
-        Insert: Omit<TrainerNote, 'id' | 'created_at' | 'updated_at'>
-        Update: Partial<Omit<TrainerNote, 'id' | 'created_at'>>
-      }
-      reservations: {
-        Row: Reservation
-        Insert: Omit<Reservation, 'id' | 'created_at'>
-        Update: Partial<Omit<Reservation, 'id' | 'created_at'>>
-      }
-    }
-    Views: Record<string, never>
-    Functions: Record<string, never>
-  }
-}
 
 // ─── Profil membre ───────────────────────────────────────────
 export interface Profile {
@@ -45,8 +11,8 @@ export interface Profile {
   last_name: string | null
   phone: string | null
   city: string | null
-  bio: string | null            // présentation personnelle
-  motivation: string | null     // pourquoi je suis là
+  bio: string | null
+  motivation: string | null
   avatar_url: string | null
   role: 'member' | 'admin'
   newsletter_global: boolean
@@ -61,20 +27,17 @@ export interface Profile {
 // ─── Journal de stage (fiche de suivi) ───────────────────────
 export interface StageLog {
   id: string
-  member_id: string             // → profiles.id
-  stage_slug: string            // ex: theatre-doubles-karmiques
+  member_id: string
+  stage_slug: string
   stage_title: string
-  stage_date: string            // date de début du stage
-  trainer: string               // 'Gabriel' | 'Amélie'
+  stage_date: string
+  trainer: string
   status: 'upcoming' | 'completed' | 'cancelled'
-  // Avant le stage
-  intention_before: string | null   // intention du membre avant le stage
-  // Après le stage
-  reflection_after: string | null   // réflexion du membre après le stage
-  key_insight: string | null        // prise de conscience principale
-  integration_notes: string | null  // comment j'intègre cela dans ma vie
-  // Évaluation
-  rating: number | null             // 1-5
+  intention_before: string | null
+  reflection_after: string | null
+  key_insight: string | null
+  integration_notes: string | null
+  rating: number | null
   would_recommend: boolean | null
   created_at: string
 }
@@ -83,10 +46,10 @@ export interface StageLog {
 export interface MemberNote {
   id: string
   member_id: string
-  stage_log_id: string | null   // liée à un stage ou libre
+  stage_log_id: string | null
   title: string
   content: string
-  is_private: boolean           // true = visible seulement par le membre
+  is_private: boolean
   created_at: string
   updated_at: string
 }
@@ -94,12 +57,12 @@ export interface MemberNote {
 // ─── Notes du formateur (Gabriel / Amélie) ────────────────────
 export interface TrainerNote {
   id: string
-  member_id: string             // le membre concerné
-  stage_log_id: string | null   // liée à un stage ou générale
-  trainer_name: string          // 'Gabriel' | 'Amélie'
-  content: string               // observation, suivi, recommandation
+  member_id: string
+  stage_log_id: string | null
+  trainer_name: string
+  content: string
   category: 'observation' | 'encouragement' | 'recommendation' | 'general'
-  is_visible_to_member: boolean // le membre peut-il voir cette note ?
+  is_visible_to_member: boolean
   created_at: string
   updated_at: string
 }
@@ -115,7 +78,7 @@ export interface Reservation {
   payment_status: 'free' | 'pending' | 'paid' | 'refunded'
   amount_cents: number | null
   stripe_session_id: string | null
-  notes: string | null          // note d'inscription (questions, besoins)
+  notes: string | null
   created_at: string
 }
 
@@ -124,4 +87,212 @@ export type ProfileWithStats = Profile & {
   stages_count: number
   last_stage_date: string | null
   reservations_count: number
+}
+
+// ─── Database Schema — format compatible Supabase JS v2 ───────
+// Note: Tables use Record<string, unknown> based Row types so that
+// the Supabase generic type system resolves correctly (avoids 'never' type errors).
+// Runtime type safety is enforced at the interface level (Profile, StageLog, etc.)
+export interface Database {
+  public: {
+    Tables: {
+      profiles: {
+        Row: Record<string, unknown> & {
+          id: string
+          email: string
+          first_name: string | null
+          last_name: string | null
+          phone: string | null
+          city: string | null
+          bio: string | null
+          motivation: string | null
+          avatar_url: string | null
+          role: string
+          newsletter_global: boolean
+          newsletter_stages: boolean
+          newsletter_spectacles: boolean
+          newsletter_blog: boolean
+          newsletter_amelie: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          email: string
+          first_name?: string | null
+          last_name?: string | null
+          phone?: string | null
+          city?: string | null
+          bio?: string | null
+          motivation?: string | null
+          avatar_url?: string | null
+          role?: string
+          newsletter_global?: boolean
+          newsletter_stages?: boolean
+          newsletter_spectacles?: boolean
+          newsletter_blog?: boolean
+          newsletter_amelie?: boolean
+        }
+        Update: {
+          email?: string
+          first_name?: string | null
+          last_name?: string | null
+          phone?: string | null
+          city?: string | null
+          bio?: string | null
+          motivation?: string | null
+          avatar_url?: string | null
+          role?: string
+          newsletter_global?: boolean
+          newsletter_stages?: boolean
+          newsletter_spectacles?: boolean
+          newsletter_blog?: boolean
+          newsletter_amelie?: boolean
+        }
+        Relationships: []
+      }
+      stage_logs: {
+        Row: Record<string, unknown> & {
+          id: string
+          member_id: string
+          stage_slug: string
+          stage_title: string
+          stage_date: string
+          trainer: string
+          status: string
+          intention_before: string | null
+          reflection_after: string | null
+          key_insight: string | null
+          integration_notes: string | null
+          rating: number | null
+          would_recommend: boolean | null
+          created_at: string
+        }
+        Insert: {
+          member_id: string
+          stage_slug: string
+          stage_title: string
+          stage_date: string
+          trainer: string
+          status?: string
+          intention_before?: string | null
+          reflection_after?: string | null
+          key_insight?: string | null
+          integration_notes?: string | null
+          rating?: number | null
+          would_recommend?: boolean | null
+        }
+        Update: {
+          stage_slug?: string
+          stage_title?: string
+          stage_date?: string
+          trainer?: string
+          status?: string
+          intention_before?: string | null
+          reflection_after?: string | null
+          key_insight?: string | null
+          integration_notes?: string | null
+          rating?: number | null
+          would_recommend?: boolean | null
+        }
+        Relationships: []
+      }
+      member_notes: {
+        Row: Record<string, unknown> & {
+          id: string
+          member_id: string
+          stage_log_id: string | null
+          title: string
+          content: string
+          is_private: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          member_id: string
+          stage_log_id?: string | null
+          title: string
+          content: string
+          is_private?: boolean
+        }
+        Update: {
+          stage_log_id?: string | null
+          title?: string
+          content?: string
+          is_private?: boolean
+        }
+        Relationships: []
+      }
+      trainer_notes: {
+        Row: Record<string, unknown> & {
+          id: string
+          member_id: string
+          stage_log_id: string | null
+          trainer_name: string
+          content: string
+          category: string
+          is_visible_to_member: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          member_id: string
+          stage_log_id?: string | null
+          trainer_name: string
+          content: string
+          category?: string
+          is_visible_to_member?: boolean
+        }
+        Update: {
+          stage_log_id?: string | null
+          trainer_name?: string
+          content?: string
+          category?: string
+          is_visible_to_member?: boolean
+        }
+        Relationships: []
+      }
+      reservations: {
+        Row: Record<string, unknown> & {
+          id: string
+          member_id: string
+          event_slug: string
+          event_title: string
+          event_date: string
+          status: string
+          payment_status: string
+          amount_cents: number | null
+          stripe_session_id: string | null
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          member_id: string
+          event_slug: string
+          event_title: string
+          event_date: string
+          status?: string
+          payment_status?: string
+          amount_cents?: number | null
+          stripe_session_id?: string | null
+          notes?: string | null
+        }
+        Update: {
+          event_slug?: string
+          event_title?: string
+          event_date?: string
+          status?: string
+          payment_status?: string
+          amount_cents?: number | null
+          stripe_session_id?: string | null
+          notes?: string | null
+        }
+        Relationships: []
+      }
+    }
+    Views: Record<string, never>
+    Functions: Record<string, never>
+    Enums: Record<string, never>
+    CompositeTypes: Record<string, never>
+  }
 }
