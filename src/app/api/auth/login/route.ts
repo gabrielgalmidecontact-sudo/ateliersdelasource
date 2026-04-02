@@ -1,3 +1,4 @@
+// src/app/api/auth/login/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createAuthClient, createServerClient } from '@/lib/supabase/server'
 
@@ -12,9 +13,8 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // ⚠️ utiliser le client AUTH (anon)
+    // Auth via client anon
     const authClient = createAuthClient()
-
     const { data, error } = await authClient.auth.signInWithPassword({
       email,
       password,
@@ -27,9 +27,8 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // récupérer profil avec service role
+    // Profil via service_role
     const adminClient = createServerClient()
-
     const { data: profile } = await adminClient
       .from('profiles')
       .select('role, first_name, last_name')
@@ -38,11 +37,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-
-      // 🔥 CRUCIAL (ce qui manquait)
       accessToken: data.session.access_token,
       refreshToken: data.session.refresh_token,
-
       user: {
         id: data.user.id,
         email: data.user.email,
@@ -51,11 +47,8 @@ export async function POST(req: NextRequest) {
         lastName: profile?.last_name || null,
       },
     })
-  } catch (error) {
-    console.error('Login error:', error)
-    return NextResponse.json(
-      { error: 'Erreur serveur' },
-      { status: 500 }
-    )
+  } catch (err) {
+    console.error('Login error:', err)
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

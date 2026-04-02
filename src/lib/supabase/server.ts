@@ -1,37 +1,34 @@
-import { cookies } from 'next/headers'
+// src/lib/supabase/server.ts
+// Client Supabase côté serveur (API routes, Server Components)
 import { createClient } from '@supabase/supabase-js'
-import { createServerClient as createSupabaseServerClient } from '@supabase/ssr'
 import type { Database } from './types'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-
-export async function createServerClient() {
-  const cookieStore = await cookies()
-
-  return createSupabaseServerClient<Database>(
-    supabaseUrl,
-    supabaseAnonKey,
+/**
+ * Client serveur principal — utilise la service_role key.
+ * À utiliser pour lire/écrire dans les tables côté serveur.
+ */
+export function createServerClient() {
+  return createClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options)
-          })
-        },
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
       },
     }
   )
 }
 
-export function createAdminClient() {
+/**
+ * Client dédié aux opérations d'authentification (signIn, signUp, signOut).
+ * Utilise la clé anon.
+ */
+export function createAuthClient() {
   return createClient<Database>(
-    supabaseUrl,
-    supabaseServiceRoleKey,
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       auth: {
         persistSession: false,
