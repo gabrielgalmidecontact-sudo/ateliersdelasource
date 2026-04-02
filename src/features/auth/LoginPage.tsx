@@ -49,17 +49,14 @@ export function LoginPage() {
         throw new Error(data?.error || 'Email ou mot de passe incorrect')
       }
 
-      if (typeof window !== 'undefined') {
-        if (data?.accessToken) {
-          localStorage.setItem('supabase_access_token', data.accessToken)
-        }
-        if (data?.refreshToken) {
-          localStorage.setItem('supabase_refresh_token', data.refreshToken)
-        }
+      const callbackUrl = searchParams.get('callbackUrl')
+
+      if (data?.user?.role === 'admin') {
+        window.location.assign('/admin')
+        return
       }
 
-      const callbackUrl = searchParams.get('callbackUrl') || '/admin'
-      window.location.assign(callbackUrl)
+      window.location.assign(callbackUrl || '/espace-membre')
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') {
         setError('La connexion a pris trop de temps. Veuillez réessayer.')
