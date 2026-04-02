@@ -1,6 +1,5 @@
 'use client'
-// src/lib/auth/AuthContext.tsx
-// Contexte d'authentification global — Supabase Auth
+
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import type { Profile } from '@/lib/supabase/types'
@@ -17,7 +16,12 @@ interface AuthContextType {
   isLoading: boolean
   isAdmin: boolean
   signIn: (email: string, password: string) => Promise<{ error?: string }>
-  signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<{ error?: string; message?: string }>
+  signUp: (
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string
+  ) => Promise<{ error?: string; message?: string }>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
 }
@@ -29,31 +33,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  const fetchProfile = useCallback(async (userId: string, token: string) => {
+  const fetchProfile = useCallback(async (token: string) => {
     const res = await fetch('/api/member/profile', {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     })
-    if (res.ok) {
-      const { profile } = await res.json()
-      setProfile(profile)
+
+    if (!res.ok) {
+      setProfile(null)
+      return
     }
+
+    const data = await res.json().catch(() => null)
+    setProfile(data?.profile ?? null)
   }, [])
 
   useEffect(() => {
-    // Récupérer la session Supabase au chargement
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setUser({ id: session.user.id, email: session.user.email!, accessToken: session.access_token })
-        fetchProfile(session.user.id, session.access_token)
-      }
-      setIsLoading(false)
-    })
+    let mounted = true
 
-    // Écouter les changements de session
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session) {
-        setUser({ id: session.user.id, email: session.user.email!, accessToken: session.access_token })
-        fetchProfile(session.user.id, session.access_token)
+    async function bootstrap() {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
+
+        if (!mounted) return
+
+        if (session?.user && session.access_token) {
+          setUser({
+            id: session.user.id,
+            email: session.user.email || '',
+            accessToken: session.access_token,
+          })
+          await fetchProfile(session.access_token)
+        } else {
+          setUser(null)
+          setProfile(null)
+        }
+      } finally {
+        if (mounted) setIsLoading(false)
+      }
+    }
+
+    bootstrap()
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user && session.access_token) {
+        setUser({
+          id: session.user.id,
+          email: session.user.email || '',
+          accessToken: session.access_token,
+        })
+        await fetchProfile(session.access_token)
       } else {
         setUser(null)
         setProfile(null)
@@ -61,32 +95,65 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false)
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [fetchProfile])
 
   const signIn = async (email: string, password: string) => {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    })
-    const data = await res.json()
-    if (!res.ok) return { error: data.error }
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
 
-    // Synchroniser la session Supabase côté client
-    await supabase.auth.setSession({ access_token: data.accessToken, refresh_token: data.refreshToken })
-    return {}
+      const data = await res.json().catch(() => ({}))
+
+      if (!res.ok) {
+        return { error: data?.error || 'Email ou mot de passe incorrect' }
+      }
+
+      if (!data?.accessToken || !data?.refreshToken) {
+        return { error: 'Réponse de connexion invalide' }
+      }
+
+      const { error } = await supabase.auth.setSession({
+        access_token: data.accessToken,
+        refresh_token: data.refreshToken,
+      })
+
+      if (error) {
+        return { error: error.message || 'Impossible de créer la session' }
+      }
+
+      return {}
+    } catch (error) {
+      if (error instanceof Error) {
+        return { error: error.message }
+      }
+      return { error: 'Erreur serveur' }
+    }
   }
 
-  const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string
+  ) => {
     const res = await fetch('/api/auth/signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password, firstName, lastName }),
     })
-    const data = await res.json()
-    if (!res.ok) return { error: data.error }
-    return { message: data.message }
+
+    const data = await res.json().catch(() => ({}))
+
+    if (!res.ok) return { error: data?.error || 'Erreur inscription' }
+
+    return { message: data?.message }
   }
 
   const signOut = async () => {
@@ -96,15 +163,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const refreshProfile = async () => {
-    if (user) await fetchProfile(user.id, user.accessToken)
+    if (user?.accessToken) {
+      await fetchProfile(user.accessToken)
+    }
   }
 
   return (
-    <AuthContext.Provider value={{
-      user, profile, isLoading,
-      isAdmin: profile?.role === 'admin',
-      signIn, signUp, signOut, refreshProfile,
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        profile,
+        isLoading,
+        isAdmin: profile?.role === 'admin',
+        signIn,
+        signUp,
+        signOut,
+        refreshProfile,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )

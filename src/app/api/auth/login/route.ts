@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createAdminClient, createServerClient } from '@/lib/supabase/server'
+import { createAuthClient, createServerClient } from '@/lib/supabase/server'
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,21 +12,23 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const supabase = await createServerClient()
+    // ⚠️ utiliser le client AUTH (anon)
+    const authClient = createAuthClient()
 
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await authClient.auth.signInWithPassword({
       email,
       password,
     })
 
-    if (error || !data.user) {
+    if (error || !data.user || !data.session) {
       return NextResponse.json(
         { error: 'Email ou mot de passe incorrect' },
         { status: 401 }
       )
     }
 
-    const adminClient = createAdminClient()
+    // récupérer profil avec service role
+    const adminClient = createServerClient()
 
     const { data: profile } = await adminClient
       .from('profiles')
@@ -36,6 +38,11 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
+
+      // 🔥 CRUCIAL (ce qui manquait)
+      accessToken: data.session.access_token,
+      refreshToken: data.session.refresh_token,
+
       user: {
         id: data.user.id,
         email: data.user.email,
