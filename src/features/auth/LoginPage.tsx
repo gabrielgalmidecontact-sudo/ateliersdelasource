@@ -1,208 +1,99 @@
 'use client'
 
-// src/features/auth/LoginPage.tsx
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { Eye, EyeOff, ArrowRight } from 'lucide-react'
-import { useAuth } from '@/lib/auth/AuthContext'
-import { Container } from '@/components/ui/Container'
-import { Input } from '@/components/ui/Input'
-import { Button } from '@/components/ui/Button'
-
-type LoginStatus = 'idle' | 'loading' | 'error'
+import { Eye, EyeOff } from 'lucide-react'
 
 export function LoginPage() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const { signIn, user, isAdmin } = useAuth()
-
-  const [form, setForm] = useState({
-    email: '',
-    password: '',
-  })
-  const [showPass, setShowPass] = useState(false)
-  const [status, setStatus] = useState<LoginStatus>('idle')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [visible, setVisible] = useState(true)
+  const [showPass, setShowPass] = useState(false)
 
-  useEffect(() => {
-    setVisible(true)
-  }, [])
-
-  useEffect(() => {
-    if (!user) return
-
-    const callbackUrl = searchParams.get('callbackUrl')
-    if (callbackUrl) {
-      router.push(callbackUrl)
-      return
-    }
-
-    router.push(isAdmin ? '/admin' : '/espace-membre')
-  }, [user, isAdmin, router, searchParams])
-
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (loading) return
 
-    if (status === 'loading') return
-
+    setLoading(true)
     setError('')
-    setStatus('loading')
 
     try {
-      const result = await signIn(form.email.trim(), form.password)
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
 
-      if (!result) {
-        throw new Error('Connexion impossible. Veuillez réessayer.')
+      const data = await res.json().catch(() => ({}))
+
+      if (!res.ok) {
+        throw new Error(data?.error || 'Erreur de connexion')
       }
 
-      if (result.error) {
-        throw new Error(result.error)
-      }
+      // 🔥 REDIRECTION FORCÉE
+      window.location.href = '/admin'
 
-      const callbackUrl = searchParams.get('callbackUrl')
-
-      if (callbackUrl) {
-        window.location.href = callbackUrl
-        return
-      }
-
-      if (result.user?.role === 'admin') {
-        window.location.href = '/admin'
-        return
-      }
-
-      window.location.href = '/espace-membre'
-    } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : 'Une erreur est survenue lors de la connexion.'
-
-      setError(message)
-      setStatus('error')
+    } catch (err: any) {
+      setError(err.message || 'Erreur')
     } finally {
-      setStatus('idle')
+      setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF6EF] flex flex-col">
-      <div className="py-6 border-b border-[#D4C4A8] bg-white">
-        <Container>
-          <Link
-            href="/"
-            className="font-serif text-xl text-[#5C3D2E] hover:text-[#C8912A] transition-colors"
-          >
-            Les Ateliers de la Source
-          </Link>
-        </Container>
-      </div>
+    <div className="min-h-screen flex items-center justify-center bg-[#FAF6EF]">
+      <div className="bg-white border p-8 w-full max-w-md">
 
-      <div className="flex-1 flex items-center justify-center px-4 py-16">
-        <div
-          className="w-full max-w-md"
-          style={{
-            opacity: visible ? 1 : 0,
-            transform: visible ? 'none' : 'translateY(20px)',
-            transition: 'opacity 0.5s ease, transform 0.5s ease',
-          }}
-        >
-          <div className="bg-white rounded-sm border border-[#D4C4A8] p-8 shadow-sm">
-            <div className="text-center mb-8">
-              <p className="text-xs font-sans tracking-widest uppercase text-[#C8912A] mb-2">
-                Espace membre
-              </p>
-              <h1 className="font-serif text-3xl text-[#5C3D2E]">Connexion</h1>
-              <p className="text-sm font-sans text-[#7A6355] mt-2">
-                Accédez à votre espace personnel
-              </p>
-            </div>
+        <h1 className="text-2xl mb-6 text-center">Connexion</h1>
 
-            <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-              <Input
-                label="Adresse email"
-                type="email"
-                name="email"
-                placeholder="votre@email.fr"
-                value={form.email}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, email: e.target.value }))
-                }
-                required
-                autoComplete="email"
-              />
+        <form onSubmit={handleSubmit} className="space-y-4">
 
-              <div className="relative">
-                <Input
-                  label="Mot de passe"
-                  type={showPass ? 'text' : 'password'}
-                  name="password"
-                  placeholder="Votre mot de passe"
-                  value={form.password}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, password: e.target.value }))
-                  }
-                  required
-                  autoComplete="current-password"
-                />
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            className="w-full border p-2"
+            required
+          />
 
-                <button
-                  type="button"
-                  onClick={() => setShowPass((v) => !v)}
-                  className="absolute right-3 top-[34px] text-[#7A6355] hover:text-[#5C3D2E] transition-colors"
-                  aria-label={
-                    showPass ? 'Masquer le mot de passe' : 'Afficher le mot de passe'
-                  }
-                >
-                  {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-
-              {error && (
-                <div className="bg-red-50 border border-red-200 rounded-sm px-4 py-3">
-                  <p className="text-sm font-sans text-red-700">{error}</p>
-                </div>
-              )}
-
-              <Button
-                type="submit"
-                variant="primary"
-                size="md"
-                disabled={status === 'loading'}
-                className="w-full"
-              >
-                {status === 'loading' ? (
-                  'Connexion…'
-                ) : (
-                  <>
-                    Se connecter <ArrowRight size={16} />
-                  </>
-                )}
-              </Button>
-            </form>
-          </div>
-
-          <div className="mt-6 text-center space-y-2">
-            <p className="text-sm font-sans text-[#7A6355]">
-              Pas encore de compte ?{' '}
-              <Link
-                href="/inscription"
-                className="text-[#C8912A] hover:text-[#5C3D2E] font-medium transition-colors"
-              >
-                Créer mon espace
-              </Link>
-            </p>
-
-            <Link
-              href="/"
-              className="block text-xs font-sans text-[#7A6355] hover:text-[#5C3D2E] transition-colors"
+          <div className="relative">
+            <input
+              type={showPass ? 'text' : 'password'}
+              placeholder="Mot de passe"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              className="w-full border p-2"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPass(v => !v)}
+              className="absolute right-2 top-2"
             >
-              ← Retour au site
-            </Link>
+              {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
           </div>
+
+          {error && (
+            <div className="text-red-600 text-sm">{error}</div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-black text-white p-2"
+          >
+            {loading ? 'Connexion…' : 'Se connecter'}
+          </button>
+
+        </form>
+
+        <div className="text-center mt-4">
+          <Link href="/">Retour</Link>
         </div>
+
       </div>
     </div>
   )
