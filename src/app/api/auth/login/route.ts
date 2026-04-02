@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase/server'
+import { createAdminClient, createServerClient } from '@/lib/supabase/server'
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,7 +12,6 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // 🔥 CLIENT AVEC COOKIES (IMPORTANT)
     const supabase = createServerClient()
 
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -20,15 +19,16 @@ export async function POST(req: NextRequest) {
       password,
     })
 
-    if (error) {
+    if (error || !data.user) {
       return NextResponse.json(
         { error: 'Email ou mot de passe incorrect' },
         { status: 401 }
       )
     }
 
-    // 🔥 récup profil (optionnel mais ok)
-    const { data: profile } = await supabase
+    const adminClient = createAdminClient()
+
+    const { data: profile } = await adminClient
       .from('profiles')
       .select('role, first_name, last_name')
       .eq('id', data.user.id)
@@ -46,9 +46,6 @@ export async function POST(req: NextRequest) {
     })
   } catch (err) {
     console.error('Login error:', err)
-    return NextResponse.json(
-      { error: 'Erreur serveur' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
