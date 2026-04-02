@@ -16,7 +16,7 @@ export function LoginPage() {
   const [showPass, setShowPass] = useState(false)
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle')
   const [error, setError] = useState('')
-  const [visible, setVisible] = useState(false)
+  const [visible, setVisible] = useState(true)
 
   useEffect(() => { setVisible(true) }, [])
 

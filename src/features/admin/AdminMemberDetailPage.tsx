@@ -52,7 +52,7 @@ export function AdminMemberDetailPage({ memberId }: { memberId: string }) {
   const [newNote, setNewNote] = useState({ content: '', category: 'general', visible: true, stageLogId: '' })
   const [addingNote, setAddingNote] = useState(false)
   const [savingNote, setSavingNote] = useState(false)
-  const [visiblePage, setVisiblePage] = useState(false)
+  const [visiblePage, setVisiblePage] = useState(true)
   // Modal pour ajouter un stage
   const [stageModal, setStageModal] = useState(false)
   const [stageForm, setStageForm] = useState<{

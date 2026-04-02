@@ -120,7 +120,7 @@ const typeColors: Record<string, 'ocre' | 'vert' | 'brun' | 'ghost'> = {
 
 function EventCard({ event, index }: { event: DisplayEvent; index: number }) {
   const ref = useRef<HTMLDivElement>(null)
-  const [visible, setVisible] = useState(false)
+  const [visible, setVisible] = useState(true)
   const startDate = new Date(event.startDate)
   const day = startDate.getDate().toString().padStart(2, '0')
   const month = MONTHS_SHORT[startDate.getMonth()]
@@ -222,7 +222,7 @@ interface Props {
 
 export function EventsListPage({ sanityEvents }: Props = {}) {
   const [filter, setFilter] = useState('Tous')
-  const [heroVisible, setHeroVisible] = useState(false)
+  const [heroVisible, setHeroVisible] = useState(true)
 
   // Utilise Sanity si disponible, sinon les données statiques
   const events: DisplayEvent[] = sanityEvents && sanityEvents.length > 0

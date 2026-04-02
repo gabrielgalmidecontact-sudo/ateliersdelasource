@@ -12,13 +12,15 @@ import { imageUrl } from '@/lib/sanity/image'
 
 function useFade(delay = 0) {
   const ref = useRef<HTMLDivElement>(null)
-  const [v, setV] = useState(false)
+  // Commence visible — l'animation s'active progressivement si IntersectionObserver est dispo
+  const [v, setV] = useState(true)
   useEffect(() => {
     const el = ref.current; if (!el) return
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setTimeout(() => setV(true), delay); obs.unobserve(el) } }, { threshold: 0.08 })
+    // Animation au scroll : visible par défaut, on peut réanimer si l'élément sort/rentre
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setTimeout(() => setV(true), delay); obs.unobserve(el) } }, { threshold: 0.05 })
     obs.observe(el); return () => obs.disconnect()
   }, [delay])
-  return { ref, style: { opacity: v ? 1 : 0, transform: v ? 'translateY(0)' : 'translateY(24px)', transition: 'opacity 0.55s ease-out, transform 0.55s ease-out' } }
+  return { ref, style: { opacity: v ? 1 : 0, transform: v ? 'translateY(0)' : 'translateY(20px)', transition: 'opacity 0.5s ease-out, transform 0.5s ease-out' } }
 }
 
 // ─── Données statiques (fallback si Sanity non configuré) ──────────────────

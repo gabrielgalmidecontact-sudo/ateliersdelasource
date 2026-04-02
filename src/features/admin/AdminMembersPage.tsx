@@ -19,7 +19,7 @@ export function AdminMembersPage() {
   const [members, setMembers] = useState<MemberWithStats[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
-  const [visible, setVisible] = useState(false)
+  const [visible, setVisible] = useState(true)
 
   useEffect(() => { setVisible(true) }, [])
   useEffect(() => {

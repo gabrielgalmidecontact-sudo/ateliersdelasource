@@ -16,7 +16,7 @@ export function SignupPage() {
   const [showPass, setShowPass] = useState(false)
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [error, setError] = useState('')
-  const [visible, setVisible] = useState(false)
+  const [visible, setVisible] = useState(true)
 
   useEffect(() => { setVisible(true) }, [])
   useEffect(() => { if (user) router.push('/espace-membre') }, [user, router])

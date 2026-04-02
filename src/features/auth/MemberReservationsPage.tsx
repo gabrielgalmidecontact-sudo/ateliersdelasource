@@ -48,7 +48,7 @@ export function MemberReservationsPage() {
   const router = useRouter()
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [loading, setLoading] = useState(true)
-  const [visible, setVisible] = useState(false)
+  const [visible, setVisible] = useState(true)
 
   useEffect(() => {
     setVisible(true)

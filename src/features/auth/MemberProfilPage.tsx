@@ -16,7 +16,7 @@ export function MemberProfilPage() {
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [visible, setVisible] = useState(false)
+  const [visible, setVisible] = useState(true)
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',

@@ -42,7 +42,7 @@ const menuItems = [
 export function MemberDashboard() {
   const { user, profile, isLoading, signOut } = useAuth()
   const router = useRouter()
-  const [visible, setVisible] = useState(false)
+  const [visible, setVisible] = useState(true)
 
   useEffect(() => { setVisible(true) }, [])
 

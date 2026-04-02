@@ -11,7 +11,7 @@ export function AdminDashboard() {
   const { user, profile, isAdmin, isLoading, signOut } = useAuth()
   const router = useRouter()
   const [stats, setStats] = useState({ members: 0, stages: 0, reservations: 0 })
-  const [visible, setVisible] = useState(false)
+  const [visible, setVisible] = useState(true)
 
   useEffect(() => { setVisible(true) }, [])
 

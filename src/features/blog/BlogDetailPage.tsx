@@ -18,7 +18,7 @@ interface PostData {
 }
 
 export function BlogDetailPage({ post }: { post: PostData }) {
-  const [visible, setVisible] = useState(false)
+  const [visible, setVisible] = useState(true)
   const date = new Date(post.publishedAt)
   const formattedDate = `${date.getDate()} ${MONTHS_FR[date.getMonth()]} ${date.getFullYear()}`
 

@@ -50,7 +50,7 @@ function formatContent(text: string) {
 }
 
 export function ActivityDetailPage({ activity, allActivities }: { activity: ActivityData; allActivities: ActivityData[] }) {
-  const [visible, setVisible] = useState(false)
+  const [visible, setVisible] = useState(true)
   const related = allActivities
     .filter(a => a.slug !== activity.slug && a.owner.name === activity.owner.name)
     .slice(0, 2)

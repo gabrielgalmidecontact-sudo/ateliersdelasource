@@ -32,7 +32,7 @@ function formatContent(text: string) {
 }
 
 export function EventDetailPage({ event }: { event: EventData }) {
-  const [visible, setVisible] = useState(false)
+  const [visible, setVisible] = useState(true)
   const startDate = new Date(event.startDate)
   const endDate = new Date(event.endDate)
   const isSameDay = event.startDate === event.endDate

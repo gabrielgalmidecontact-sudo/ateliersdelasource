@@ -305,7 +305,7 @@ export function MemberSuiviPage() {
   const router = useRouter()
   const [stages, setStages] = useState<StageWithNotes[]>([])
   const [loading, setLoading] = useState(true)
-  const [visible, setVisible] = useState(false)
+  const [visible, setVisible] = useState(true)
 
   useEffect(() => { setVisible(true) }, [])
   useEffect(() => { if (!isLoading && !user) router.push('/connexion') }, [user, isLoading, router])

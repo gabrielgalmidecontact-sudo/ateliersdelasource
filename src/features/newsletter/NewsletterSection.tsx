@@ -7,7 +7,7 @@ import { CheckCircle } from 'lucide-react'
 
 export function NewsletterSection() {
   const ref = useRef<HTMLDivElement>(null)
-  const [visible, setVisible] = useState(false)
+  const [visible, setVisible] = useState(true)
   const [email, setEmail] = useState('')
   const [firstName, setFirstName] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')

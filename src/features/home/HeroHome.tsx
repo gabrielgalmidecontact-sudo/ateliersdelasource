@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { ChevronDown } from 'lucide-react'
 
 export function HeroHome() {
-  const [visible, setVisible] = useState(false)
+  const [visible, setVisible] = useState(true)
 
   useEffect(() => {
     // Petit délai pour laisser le JS s'hydrater puis déclencher l'animation

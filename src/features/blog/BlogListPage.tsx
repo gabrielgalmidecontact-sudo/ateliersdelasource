@@ -35,7 +35,7 @@ function getAuthorName(author: PostItem['author']): string {
 
 function PostCard({ post, index }: { post: PostItem; index: number }) {
   const ref = useRef<HTMLDivElement>(null)
-  const [visible, setVisible] = useState(false)
+  const [visible, setVisible] = useState(true)
   const slug = getSlug(post.slug)
   const authorName = getAuthorName(post.author)
   const date = post.publishedAt ? new Date(post.publishedAt) : null
@@ -51,7 +51,7 @@ function PostCard({ post, index }: { post: PostItem; index: number }) {
     if (!el) { setVisible(true); return }
     const obs = new IntersectionObserver(
       ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect() } },
-      { threshold: 0.1 }
+      { threshold: 0.05 }
     )
     obs.observe(el)
     return () => obs.disconnect()
@@ -108,7 +108,7 @@ interface BlogListPageProps {
 
 export function BlogListPage({ posts: propPosts, fromSanity }: BlogListPageProps) {
   const heroRef = useRef<HTMLDivElement>(null)
-  const [heroVisible, setHeroVisible] = useState(false)
+  const [heroVisible, setHeroVisible] = useState(true)
 
   // Données statiques intégrées (utilisées quand pas de props)
   const staticPosts: PostItem[] = [

@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils/cn'
-import { Menu, X } from 'lucide-react'
+import { Menu, X, User } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useAuth } from '@/lib/auth/AuthContext'
 
 const navItems = [
   { label: 'Accueil', href: '/' },
@@ -20,6 +21,7 @@ export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const pathname = usePathname()
+  const { user, isAdmin } = useAuth()
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60)
@@ -89,6 +91,49 @@ export function SiteHeader() {
               })}
             </nav>
 
+            {/* CTA Connexion / Espace membre */}
+            <div className="hidden lg:flex items-center gap-2">
+              {user ? (
+                <>
+                  {isAdmin && (
+                    <Link
+                      href="/admin"
+                      className={cn(
+                        'px-3 py-2 text-sm font-sans font-medium rounded-sm transition-all duration-200',
+                        scrolled ? 'text-[#5C3D2E] hover:bg-[#5C3D2E]/10' : 'text-white/90 hover:bg-white/10',
+                        pathname.startsWith('/admin') ? 'text-[#C8912A]' : '',
+                      )}
+                    >
+                      Admin
+                    </Link>
+                  )}
+                  <Link
+                    href="/espace-membre"
+                    className={cn(
+                      'flex items-center gap-1.5 px-4 py-2 text-sm font-sans font-medium rounded-sm transition-all duration-200',
+                      'bg-[#5C3D2E] text-[#F5EDD8] hover:bg-[#7A4A35]',
+                    )}
+                  >
+                    <User size={14} />
+                    Mon espace
+                  </Link>
+                </>
+              ) : (
+                <Link
+                  href="/connexion"
+                  className={cn(
+                    'flex items-center gap-1.5 px-4 py-2 text-sm font-sans font-medium rounded-sm border transition-all duration-200',
+                    scrolled
+                      ? 'border-[#5C3D2E] text-[#5C3D2E] hover:bg-[#5C3D2E] hover:text-[#F5EDD8]'
+                      : 'border-white/70 text-white hover:bg-white/20',
+                  )}
+                >
+                  <User size={14} />
+                  Connexion
+                </Link>
+              )}
+            </div>
+
             {/* Mobile toggle */}
             <button
               className={cn(
@@ -131,6 +176,25 @@ export function SiteHeader() {
                   </Link>
                 )
               })}
+              {/* Séparateur */}
+              <div className="mt-4 pt-4 border-t border-[#D4C4A8]">
+                {user ? (
+                  <>
+                    <Link href="/espace-membre" className="flex items-center gap-2 py-4 px-4 text-base font-sans font-medium text-[#5C3D2E]">
+                      <User size={16} /> Mon espace membre
+                    </Link>
+                    {isAdmin && (
+                      <Link href="/admin" className="flex items-center gap-2 py-3 px-4 text-sm font-sans text-[#7A6355]">
+                        Administration
+                      </Link>
+                    )}
+                  </>
+                ) : (
+                  <Link href="/connexion" className="flex items-center gap-2 py-4 px-4 text-base font-sans font-medium text-[#5C3D2E]">
+                    <User size={16} /> Connexion / Espace membre
+                  </Link>
+                )}
+              </div>
             </nav>
           </motion.div>
         )}

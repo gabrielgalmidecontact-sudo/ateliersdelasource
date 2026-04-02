@@ -76,7 +76,7 @@ export function MemberNewsletterPage() {
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   const [fetching, setFetching] = useState(true)
-  const [visible, setVisible] = useState(false)
+  const [visible, setVisible] = useState(true)
 
   useEffect(() => {
     setVisible(true)

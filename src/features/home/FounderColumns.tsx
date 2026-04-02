@@ -6,7 +6,7 @@ import { ArrowRight } from 'lucide-react'
 
 function useFadeIn() {
   const ref = useRef<HTMLDivElement>(null)
-  const [visible, setVisible] = useState(false)
+  const [visible, setVisible] = useState(true)
   useEffect(() => {
     const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true) }, { threshold: 0.1 })
     if (ref.current) obs.observe(ref.current)

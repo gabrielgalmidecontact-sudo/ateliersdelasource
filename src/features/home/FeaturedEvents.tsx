@@ -6,7 +6,7 @@ import { MapPin, ArrowRight } from 'lucide-react'
 
 function useFadeIn(delay = 0) {
   const ref = useRef<HTMLDivElement>(null)
-  const [visible, setVisible] = useState(false)
+  const [visible, setVisible] = useState(true)
   useEffect(() => {
     const obs = new IntersectionObserver(([e]) => {
       if (e.isIntersecting) setTimeout(() => setVisible(true), delay)
