@@ -1,26 +1,34 @@
-// src/app/api/auth/login/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { createAuthClient, createServerClient } from '@/lib/supabase/server'
+import { createServerClient } from '@/lib/supabase/server'
 
 export async function POST(req: NextRequest) {
   try {
     const { email, password } = await req.json()
 
     if (!email || !password) {
-      return NextResponse.json({ error: 'Email et mot de passe requis' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Email et mot de passe requis' },
+        { status: 400 }
+      )
     }
 
-    // ① Authentification via le client anon (pas de session persistée sur le service client)
-    const authClient = createAuthClient()
-    const { data, error } = await authClient.auth.signInWithPassword({ email, password })
+    // 🔥 CLIENT AVEC COOKIES (IMPORTANT)
+    const supabase = createServerClient()
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
 
     if (error) {
-      return NextResponse.json({ error: 'Email ou mot de passe incorrect' }, { status: 401 })
+      return NextResponse.json(
+        { error: 'Email ou mot de passe incorrect' },
+        { status: 401 }
+      )
     }
 
-    // ② Récupération du profil via un client service_role SÉPARÉ (bypass RLS sans recursion)
-    const adminClient = createServerClient()
-    const { data: profile } = await adminClient
+    // 🔥 récup profil (optionnel mais ok)
+    const { data: profile } = await supabase
       .from('profiles')
       .select('role, first_name, last_name')
       .eq('id', data.user.id)
@@ -28,8 +36,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      accessToken: data.session?.access_token,
-      refreshToken: data.session?.refresh_token,
       user: {
         id: data.user.id,
         email: data.user.email,
@@ -40,6 +46,9 @@ export async function POST(req: NextRequest) {
     })
   } catch (err) {
     console.error('Login error:', err)
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Erreur serveur' },
+      { status: 500 }
+    )
   }
 }
