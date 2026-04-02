@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const supabase = createServerClient()
+    const supabase = await createServerClient()
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -40,12 +40,15 @@ export async function POST(req: NextRequest) {
         id: data.user.id,
         email: data.user.email,
         role: profile?.role || 'member',
-        firstName: profile?.first_name,
-        lastName: profile?.last_name,
+        firstName: profile?.first_name || null,
+        lastName: profile?.last_name || null,
       },
     })
-  } catch (err) {
-    console.error('Login error:', err)
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+  } catch (error) {
+    console.error('Login error:', error)
+    return NextResponse.json(
+      { error: 'Erreur serveur' },
+      { status: 500 }
+    )
   }
 }
