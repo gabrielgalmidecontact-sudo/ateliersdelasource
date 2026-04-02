@@ -1,14 +1,17 @@
 'use client'
-// src/features/auth/MemberProfilPage.tsx — connectée à Supabase
+// src/features/auth/MemberProfilPage.tsx — connectée à Supabase (Bearer token)
 import { useState, useEffect, useCallback } from 'react'
 import { Container } from '@/components/ui/Container'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { ArrowLeft, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthContext'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 export function MemberProfilPage() {
-  const { user } = useAuth()
+  const { user, isLoading, refreshProfile } = useAuth()
+  const router = useRouter()
   const [saved, setSaved] = useState(false)
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(true)
@@ -20,6 +23,7 @@ export function MemberProfilPage() {
     email: '',
     phone: '',
     bio: '',
+    motivation: '',
     city: '',
   })
 
@@ -27,7 +31,14 @@ export function MemberProfilPage() {
     setVisible(true)
   }, [])
 
-  // Charger le profil depuis Supabase
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/connexion?callbackUrl=/espace-membre/profil')
+    }
+  }, [user, isLoading, router])
+
+  // Charger le profil depuis Supabase via Bearer token
   const loadProfile = useCallback(async () => {
     if (!user) {
       setFetching(false)
@@ -35,7 +46,7 @@ export function MemberProfilPage() {
     }
     try {
       const res = await fetch('/api/member/profile', {
-        headers: { 'x-user-id': user.id },
+        headers: { Authorization: `Bearer ${user.accessToken}` },
       })
       if (res.ok) {
         const data = await res.json()
@@ -47,6 +58,7 @@ export function MemberProfilPage() {
             email: p.email || user.email || '',
             phone: p.phone || '',
             bio: p.bio || '',
+            motivation: p.motivation || '',
             city: p.city || '',
           })
         } else {
@@ -70,6 +82,7 @@ export function MemberProfilPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!user) return
     setLoading(true)
     setError(null)
     try {
@@ -77,13 +90,14 @@ export function MemberProfilPage() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          ...(user ? { 'x-user-id': user.id } : {}),
+          Authorization: `Bearer ${user.accessToken}`,
         },
         body: JSON.stringify({
           first_name: form.firstName,
           last_name: form.lastName,
           phone: form.phone,
           bio: form.bio,
+          motivation: form.motivation,
           city: form.city,
         }),
       })
@@ -93,6 +107,8 @@ export function MemberProfilPage() {
       } else {
         setSaved(true)
         setTimeout(() => setSaved(false), 3000)
+        // Rafraîchir le profil dans le contexte Auth
+        await refreshProfile()
       }
     } catch {
       setError('Erreur de connexion')
@@ -101,18 +117,26 @@ export function MemberProfilPage() {
     }
   }
 
+  if (isLoading || (!user && !fetching)) {
+    return (
+      <div className="min-h-screen bg-[#FAF6EF] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#C8912A] border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
   return (
     <>
       {/* Header */}
       <div className="pt-32 pb-12" style={{ backgroundColor: '#5C3D2E' }}>
         <Container>
-          <a
+          <Link
             href="/espace-membre"
-            className="flex items-center gap-1"
-            style={{ color: '#C8A888', fontSize: '0.875rem', marginBottom: '12px' }}
+            className="flex items-center gap-1 mb-3"
+            style={{ color: '#C8A888', fontSize: '0.875rem' }}
           >
             <ArrowLeft size={14} /> Espace membre
-          </a>
+          </Link>
           <h1 className="font-serif" style={{ fontSize: '2rem', color: '#F5EDD8' }}>
             Mon profil
           </h1>
@@ -149,6 +173,7 @@ export function MemberProfilPage() {
                         value={form.firstName}
                         onChange={handleChange}
                         placeholder="Votre prénom"
+                        autoComplete="given-name"
                       />
                       <Input
                         label="Nom"
@@ -156,6 +181,7 @@ export function MemberProfilPage() {
                         value={form.lastName}
                         onChange={handleChange}
                         placeholder="Votre nom"
+                        autoComplete="family-name"
                       />
                     </div>
                     <Input
@@ -174,6 +200,7 @@ export function MemberProfilPage() {
                       value={form.phone}
                       onChange={handleChange}
                       placeholder="06 00 00 00 00"
+                      autoComplete="tel"
                     />
                     <Input
                       label="Ville"
@@ -181,19 +208,46 @@ export function MemberProfilPage() {
                       value={form.city}
                       onChange={handleChange}
                       placeholder="Votre ville"
+                      autoComplete="address-level2"
                     />
                     <div>
                       <label
                         className="block text-sm font-medium mb-1.5"
                         style={{ color: '#5C3D2E' }}
+                        htmlFor="motivation"
+                      >
+                        Ma motivation (optionnel)
+                      </label>
+                      <textarea
+                        id="motivation"
+                        name="motivation"
+                        value={form.motivation}
+                        onChange={handleChange}
+                        placeholder="Pourquoi rejoindre les Ateliers de la Source ?"
+                        rows={3}
+                        className="w-full px-4 py-3 text-sm font-sans outline-none resize-none"
+                        style={{
+                          background: '#FAF6EF',
+                          border: '1px solid #D4C4A8',
+                          color: '#2D1F14',
+                          borderRadius: '2px',
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label
+                        className="block text-sm font-medium mb-1.5"
+                        style={{ color: '#5C3D2E' }}
+                        htmlFor="bio"
                       >
                         À propos de moi (optionnel)
                       </label>
                       <textarea
+                        id="bio"
                         name="bio"
                         value={form.bio}
                         onChange={handleChange}
-                        placeholder="Quelques mots sur votre démarche, vos motivations..."
+                        placeholder="Quelques mots sur votre démarche, vos intérêts..."
                         rows={4}
                         className="w-full px-4 py-3 text-sm font-sans outline-none resize-none"
                         style={{

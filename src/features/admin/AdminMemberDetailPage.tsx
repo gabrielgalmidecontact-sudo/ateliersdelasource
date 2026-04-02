@@ -8,6 +8,8 @@ import { ArrowLeft, User, FileText, Calendar, BookOpen, Plus, Save, Eye, EyeOff,
 import { useAuth } from '@/lib/auth/AuthContext'
 import { Container } from '@/components/ui/Container'
 import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Modal'
+import { Input } from '@/components/ui/Input'
 import type { Profile, StageLog, TrainerNote, Reservation, MemberNote } from '@/lib/supabase/types'
 
 type FullMemberData = {
@@ -51,6 +53,15 @@ export function AdminMemberDetailPage({ memberId }: { memberId: string }) {
   const [addingNote, setAddingNote] = useState(false)
   const [savingNote, setSavingNote] = useState(false)
   const [visiblePage, setVisiblePage] = useState(false)
+  // Modal pour ajouter un stage
+  const [stageModal, setStageModal] = useState(false)
+  const [stageForm, setStageForm] = useState({
+    stage_title: '',
+    stage_date: new Date().toISOString().split('T')[0],
+    trainer: 'Gabriel',
+    status: 'upcoming' as const,
+  })
+  const [savingStage, setSavingStage] = useState(false)
 
   useEffect(() => { setVisiblePage(true) }, [])
   useEffect(() => {
@@ -95,22 +106,23 @@ export function AdminMemberDetailPage({ memberId }: { memberId: string }) {
   }
 
   async function createStageLog() {
-    if (!user || !data) return
-    const stageName = prompt('Titre du stage :')
-    if (!stageName) return
-    const stageDate = prompt('Date du stage (YYYY-MM-DD) :', new Date().toISOString().split('T')[0])
-    if (!stageDate) return
-
+    if (!user || !stageForm.stage_title || !stageForm.stage_date) return
+    setSavingStage(true)
     await fetch('/api/admin/members/' + memberId + '/add-stage', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.accessToken}` },
       body: JSON.stringify({
         member_id: memberId,
-        stage_title: stageName,
-        stage_date: stageDate,
-        stage_slug: stageName.toLowerCase().replace(/\s+/g, '-'),
+        stage_title: stageForm.stage_title,
+        stage_date: stageForm.stage_date,
+        stage_slug: stageForm.stage_title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+        trainer: stageForm.trainer,
+        status: stageForm.status,
       }),
     })
+    setSavingStage(false)
+    setStageModal(false)
+    setStageForm({ stage_title: '', stage_date: new Date().toISOString().split('T')[0], trainer: 'Gabriel', status: 'upcoming' })
     loadMember()
   }
 
@@ -229,7 +241,7 @@ export function AdminMemberDetailPage({ memberId }: { memberId: string }) {
               <div className="space-y-4">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="font-serif text-xl text-[#5C3D2E]">Fiches de suivi</h2>
-                  <Button size="sm" variant="primary" onClick={createStageLog}>
+                  <Button size="sm" variant="primary" onClick={() => setStageModal(true)}>
                     <Plus size={14} /> Ajouter un stage
                   </Button>
                 </div>
@@ -460,6 +472,80 @@ export function AdminMemberDetailPage({ memberId }: { memberId: string }) {
           </div>
         </Container>
       </div>
+
+      {/* Modal : Ajouter un stage */}
+      <Modal
+        isOpen={stageModal}
+        onClose={() => setStageModal(false)}
+        title="Ajouter une fiche de suivi"
+        size="md"
+      >
+        <div className="space-y-4">
+          <Input
+            label="Titre du stage *"
+            name="stage_title"
+            value={stageForm.stage_title}
+            onChange={e => setStageForm(p => ({ ...p, stage_title: e.target.value }))}
+            placeholder="Ex : Théâtre des Doubles Karmiques"
+            required
+          />
+          <div>
+            <label className="block text-sm font-medium text-[#5C3D2E] mb-1.5" htmlFor="stage_date">
+              Date du stage *
+            </label>
+            <input
+              id="stage_date"
+              type="date"
+              value={stageForm.stage_date}
+              onChange={e => setStageForm(p => ({ ...p, stage_date: e.target.value }))}
+              className="w-full px-4 py-3 text-sm font-sans border border-[#D4C4A8] rounded-sm bg-[#FAF6EF] focus:outline-none focus:border-[#C8912A] text-[#2D1F14]"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[#5C3D2E] mb-1.5" htmlFor="trainer">
+              Formateur
+            </label>
+            <select
+              id="trainer"
+              value={stageForm.trainer}
+              onChange={e => setStageForm(p => ({ ...p, trainer: e.target.value }))}
+              className="w-full px-4 py-3 text-sm font-sans border border-[#D4C4A8] rounded-sm bg-[#FAF6EF] focus:outline-none focus:border-[#C8912A] text-[#2D1F14]"
+            >
+              <option value="Gabriel">Gabriel</option>
+              <option value="Amélie">Amélie</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[#5C3D2E] mb-1.5" htmlFor="status">
+              Statut
+            </label>
+            <select
+              id="status"
+              value={stageForm.status}
+              onChange={e => setStageForm(p => ({ ...p, status: e.target.value as 'upcoming' | 'completed' | 'cancelled' }))}
+              className="w-full px-4 py-3 text-sm font-sans border border-[#D4C4A8] rounded-sm bg-[#FAF6EF] focus:outline-none focus:border-[#C8912A] text-[#2D1F14]"
+            >
+              <option value="upcoming">À venir</option>
+              <option value="completed">Effectué</option>
+              <option value="cancelled">Annulé</option>
+            </select>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <Button
+              variant="primary"
+              size="md"
+              onClick={createStageLog}
+              disabled={savingStage || !stageForm.stage_title || !stageForm.stage_date}
+            >
+              {savingStage ? 'Enregistrement…' : 'Créer la fiche'}
+            </Button>
+            <Button variant="ghost" size="md" onClick={() => setStageModal(false)}>
+              Annuler
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

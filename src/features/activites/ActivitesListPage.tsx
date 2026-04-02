@@ -1,11 +1,14 @@
 'use client'
 // src/features/activites/ActivitesListPage.tsx
+// Accepte les données Sanity (via page.tsx server) ou utilise les données statiques intégrées
 import { useRef, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, Clock, Users } from 'lucide-react'
 import { Container } from '@/components/ui/Container'
 import { Badge } from '@/components/ui/Badge'
 import { Section } from '@/components/ui/Section'
+import type { Activity } from '@/types'
+import { imageUrl } from '@/lib/sanity/image'
 
 function useFade(delay = 0) {
   const ref = useRef<HTMLDivElement>(null)
@@ -18,28 +21,67 @@ function useFade(delay = 0) {
   return { ref, style: { opacity: v ? 1 : 0, transform: v ? 'translateY(0)' : 'translateY(24px)', transition: 'opacity 0.55s ease-out, transform 0.55s ease-out' } }
 }
 
-const allActivities = [
-  { code: 'A1', title: 'Théâtre des Doubles Karmiques', slug: 'theatre-doubles-karmiques', owner: 'Gabriel', excerpt: 'Avec un groupe de 4 à 5 personnes, Gabriel vous accompagne dans une immersion profonde au cœur de vous-même. Un processus collectif, conscient et créatif pour désamorcer les mécanismes répétitifs.', duration: '3 jours et demi', participants: '4 à 5 personnes', type: 'Stage', imageUrl: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=800&q=80' },
-  { code: 'A2', title: 'Entretien Biographique', slug: 'entretien-biographique', owner: 'Gabriel', excerpt: 'Formé pendant 3 ans à la biographie avec Cyr Boé, Gabriel vous propose des entretiens d\'une heure pour explorer le sens de votre vie et découvrir les rythmes qui la traversent.', duration: '1 heure', participants: 'Individuel', type: 'Accompagnement', imageUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&q=80' },
-  { code: 'A3', title: 'Atelier d\'Expression Parlée et Corporelle', slug: 'atelier-expression-parlee-corporelle', owner: 'Gabriel', excerpt: 'Gagner en aisance corporelle et verbale pour un oral, une audition, un entretien… ou simplement pour retrouver une manière d\'être plus libre et plus tranquille au quotidien.', duration: '1 heure', participants: 'Individuel', type: 'Atelier', imageUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&q=80' },
-  { code: 'A4', title: 'Rêves à 100 000 euros', slug: 'reves-100000-euros', owner: 'Gabriel (Galmide)', excerpt: 'Un seul en scène semi-improvisé où Galmide raconte 7 années de vie rocambolesque — déjantée, délurée, touchante et absolument vraie. Le public participe. Au chapeau.', duration: '1h30', participants: 'Tous publics', type: 'Spectacle', imageUrl: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80' },
-  { code: 'A5', title: 'La Vision de Dante de Victor Hugo', slug: 'vision-dante-victor-hugo', owner: 'Gabriel (Galmide)', excerpt: 'Immersion poétique à travers l\'œuvre magistrale de Victor Hugo, portée par Galmide et accompagnée d\'une violoncelliste ou pianiste. 1h30. Jouable dans vos salons. Au chapeau.', duration: '1h30', participants: 'Tous publics', type: 'Spectacle', imageUrl: 'https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=800&q=80' },
-  { code: 'A6', title: 'Massages & Soins', slug: 'massages-soins', owner: 'Amélie', excerpt: 'Amélie vous accueille dans son espace de soins corporels. Détails et horaires à venir dès l\'ouverture de sa salle.', duration: 'À définir', participants: 'Individuel', type: 'Soin', imageUrl: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800&q=80', placeholder: true },
-  { code: 'A7', title: 'Hébergement sur le lieu', slug: 'hebergement', owner: 'Amélie', excerpt: 'Informations pour réserver une nuit ou un séjour sur le lieu. Contenu à venir prochainement.', duration: 'Variable', participants: 'À définir', type: 'Hébergement', imageUrl: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&q=80', placeholder: true },
-  { code: 'A8', title: 'Venir sur le lieu', slug: 'venir-sur-le-lieu', owner: 'Amélie', excerpt: 'Accès, itinéraire et informations pratiques pour rejoindre les Ateliers de la Source. Contenu à venir.', duration: '—', participants: '—', type: 'Informations', imageUrl: 'https://images.unsplash.com/photo-1452421822248-d4c2b47f0c81?w=800&q=80', placeholder: true },
+// ─── Données statiques (fallback si Sanity non configuré) ──────────────────
+type StaticActivity = {
+  code: string
+  title: string
+  slug: string
+  owner: string
+  excerpt: string
+  duration: string
+  participants: string
+  type: string
+  imageUrl: string
+  placeholder?: boolean
+}
+
+const STATIC_ACTIVITIES: StaticActivity[] = [
+  { code: 'A1', title: 'Théâtre des Doubles Karmiques', slug: 'theatre-doubles-karmiques', owner: 'Gabriel', excerpt: "Avec un groupe de 4 à 5 personnes, Gabriel vous accompagne dans une immersion profonde au cœur de vous-même. Un processus collectif, conscient et créatif pour désamorcer les mécanismes répétitifs.", duration: '3 jours et demi', participants: '4 à 5 personnes', type: 'Stage', imageUrl: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=800&q=80' },
+  { code: 'A2', title: 'Entretien Biographique', slug: 'entretien-biographique', owner: 'Gabriel', excerpt: "Formé pendant 3 ans à la biographie avec Cyr Boé, Gabriel vous propose des entretiens d'une heure pour explorer le sens de votre vie et découvrir les rythmes qui la traversent.", duration: '1 heure', participants: 'Individuel', type: 'Accompagnement', imageUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&q=80' },
+  { code: 'A3', title: "Atelier d'Expression Parlée et Corporelle", slug: 'atelier-expression-parlee-corporelle', owner: 'Gabriel', excerpt: "Gagner en aisance corporelle et verbale pour un oral, une audition, un entretien… ou simplement pour retrouver une manière d'être plus libre et plus tranquille au quotidien.", duration: '1 heure', participants: 'Individuel', type: 'Atelier', imageUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&q=80' },
+  { code: 'A4', title: 'Rêves à 100 000 euros', slug: 'reves-100000-euros', owner: 'Gabriel (Galmide)', excerpt: "Un seul en scène semi-improvisé où Galmide raconte 7 années de vie rocambolesque — déjantée, délurée, touchante et absolument vraie. Le public participe. Au chapeau.", duration: '1h30', participants: 'Tous publics', type: 'Spectacle', imageUrl: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80' },
+  { code: 'A5', title: 'La Vision de Dante de Victor Hugo', slug: 'vision-dante-victor-hugo', owner: 'Gabriel (Galmide)', excerpt: "Immersion poétique à travers l'œuvre magistrale de Victor Hugo, portée par Galmide et accompagnée d'une violoncelliste ou pianiste. 1h30. Jouable dans vos salons. Au chapeau.", duration: '1h30', participants: 'Tous publics', type: 'Spectacle', imageUrl: 'https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=800&q=80' },
+  { code: 'A6', title: 'Massages & Soins', slug: 'massages-soins', owner: 'Amélie', excerpt: "Amélie vous accueille dans son espace de soins corporels. Détails et horaires à venir dès l'ouverture de sa salle.", duration: 'À définir', participants: 'Individuel', type: 'Soin', imageUrl: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800&q=80', placeholder: true },
+  { code: 'A7', title: 'Hébergement sur le lieu', slug: 'hebergement', owner: 'Amélie', excerpt: "Informations pour réserver une nuit ou un séjour sur le lieu. Contenu à venir prochainement.", duration: 'Variable', participants: 'À définir', type: 'Hébergement', imageUrl: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&q=80', placeholder: true },
+  { code: 'A8', title: 'Venir sur le lieu', slug: 'venir-sur-le-lieu', owner: 'Amélie', excerpt: "Accès, itinéraire et informations pratiques pour rejoindre les Ateliers de la Source. Contenu à venir.", duration: '—', participants: '—', type: 'Informations', imageUrl: 'https://images.unsplash.com/photo-1452421822248-d4c2b47f0c81?w=800&q=80', placeholder: true },
 ]
 
 const typeColors: Record<string, 'ocre' | 'vert' | 'brun' | 'ghost'> = {
   Stage: 'brun', Atelier: 'ocre', Spectacle: 'vert', Accompagnement: 'ghost', Soin: 'vert', Hébergement: 'ghost', Informations: 'ghost',
 }
 
-function ActivityCard({ activity, delay = 0 }: { activity: typeof allActivities[0]; delay?: number }) {
+// ─── Normalise une Activity Sanity vers le format d'affichage ─────────────
+function normalizeSanityActivity(a: Activity): StaticActivity {
+  const ownerName = typeof a.owner === 'object' && a.owner ? (a.owner as { name?: string }).name ?? 'Gabriel' : 'Gabriel'
+  const slug = typeof a.slug === 'object' ? (a.slug as { current: string }).current : String(a.slug ?? '')
+  const imgSrc = a.coverImage
+    ? imageUrl(a.coverImage, 800, 600) || ''
+    : 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80'
+  const duration = a.duration && typeof a.duration === 'object'
+    ? (a.duration as { value?: string; label?: string }).value ?? (a.duration as { value?: string; label?: string }).label ?? '—'
+    : String(a.duration ?? '—')
+  return {
+    code: a.code ?? '',
+    title: a.title ?? '',
+    slug,
+    owner: ownerName,
+    excerpt: a.excerpt ?? '',
+    duration,
+    participants: typeof a.participants === 'string' ? a.participants : '—',
+    type: 'Stage',
+    imageUrl: imgSrc,
+  }
+}
+
+// ─── ActivityCard ─────────────────────────────────────────────────────────
+function ActivityCard({ activity, delay = 0 }: { activity: StaticActivity; delay?: number }) {
   const { ref, style } = useFade(delay)
   return (
     <div ref={ref} style={style}>
       <Link href={`/activites/${activity.slug}`} className="group block h-full" aria-label={`Voir : ${activity.title}`}>
         <article className="h-full flex flex-col bg-white rounded-sm border border-[#D4C4A8] hover:border-[#C8912A]/50 hover:shadow-lg transition-all duration-300 overflow-hidden">
           <div className="relative h-52 overflow-hidden bg-[#D4C4A8]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={activity.imageUrl} alt={activity.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
             {activity.placeholder && (
               <div className="absolute inset-0 bg-[#FAF6EF]/60 flex items-center justify-center">
@@ -47,7 +89,11 @@ function ActivityCard({ activity, delay = 0 }: { activity: typeof allActivities[
               </div>
             )}
             <div className="absolute top-3 left-3"><Badge variant={typeColors[activity.type] || 'ghost'}>{activity.type}</Badge></div>
-            <div className="absolute top-3 right-3"><span className="text-xs font-sans font-bold bg-[#5C3D2E]/80 text-[#F5EDD8] px-2 py-1 rounded-sm">{activity.code}</span></div>
+            {activity.code && (
+              <div className="absolute top-3 right-3">
+                <span className="text-xs font-sans font-bold bg-[#5C3D2E]/80 text-[#F5EDD8] px-2 py-1 rounded-sm">{activity.code}</span>
+              </div>
+            )}
           </div>
           <div className="flex-1 flex flex-col p-6">
             <p className="text-xs font-sans text-[#C8912A] font-medium mb-2">{activity.owner}</p>
@@ -67,10 +113,22 @@ function ActivityCard({ activity, delay = 0 }: { activity: typeof allActivities[
   )
 }
 
-export function ActivitesListPage() {
+// ─── ActivitesListPage ─────────────────────────────────────────────────────
+interface Props {
+  /** Si fourni (depuis Sanity), remplace les données statiques */
+  sanityActivities?: Activity[] | null
+}
+
+export function ActivitesListPage({ sanityActivities }: Props = {}) {
   const headerFade = useFade()
-  const gabriel = allActivities.filter(a => a.owner.startsWith('Gabriel'))
-  const amelie = allActivities.filter(a => a.owner.startsWith('Amélie'))
+
+  // Utilise Sanity si disponible, sinon les données statiques
+  const activities: StaticActivity[] = sanityActivities && sanityActivities.length > 0
+    ? sanityActivities.map(normalizeSanityActivity)
+    : STATIC_ACTIVITIES
+
+  const gabriel = activities.filter(a => a.owner.startsWith('Gabriel'))
+  const amelie = activities.filter(a => a.owner.startsWith('Amélie'))
 
   return (
     <>
@@ -91,16 +149,20 @@ export function ActivitesListPage() {
         <Container>
           <SectionHeader eyebrow="Avec Gabriel" title="Stages, Ateliers & Spectacles" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {gabriel.map((act, i) => <ActivityCard key={act.code} activity={act} delay={i * 80} />)}
+            {gabriel.map((act, i) => <ActivityCard key={act.code || act.slug} activity={act} delay={i * 80} />)}
           </div>
         </Container>
       </Section>
 
       <Section bg="beige" id="amelie">
         <Container>
-          <SectionHeader eyebrow="Avec Amélie" title="Soins, Hébergement & Accueil" note="Les propositions d'Amélie seront prochainement détaillées. N'hésitez pas à la contacter directement." />
+          <SectionHeader
+            eyebrow="Avec Amélie"
+            title="Soins, Hébergement & Accueil"
+            note="Les propositions d'Amélie seront prochainement détaillées. N'hésitez pas à la contacter directement."
+          />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {amelie.map((act, i) => <ActivityCard key={act.code} activity={act} delay={i * 80} />)}
+            {amelie.map((act, i) => <ActivityCard key={act.code || act.slug} activity={act} delay={i * 80} />)}
           </div>
         </Container>
       </Section>

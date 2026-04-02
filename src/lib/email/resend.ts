@@ -1,0 +1,251 @@
+// src/lib/email/resend.ts
+// Client Resend + templates d'emails
+// Utiliser RESEND_API_KEY dans les variables d'environnement
+
+import { Resend } from 'resend'
+
+// Lazy initialization — évite l'erreur de build si la clé est manquante
+let _resend: Resend | null = null
+
+function getResend(): Resend {
+  if (!_resend) {
+    const apiKey = process.env.RESEND_API_KEY
+    if (!apiKey) {
+      throw new Error('RESEND_API_KEY manquante. Configurez la variable d\'environnement.')
+    }
+    _resend = new Resend(apiKey)
+  }
+  return _resend
+}
+
+// ─── Config ────────────────────────────────────────────────────
+const FROM_EMAIL = process.env.EMAIL_FROM || 'Les Ateliers de la Source <noreply@ateliersdelasource.fr>'
+const CONTACT_EMAIL = process.env.CONTACT_EMAIL || 'gabrielgalmide.contact@gmail.com'
+const SITE_NAME = 'Les Ateliers de la Source'
+
+// ─── Template de base HTML ────────────────────────────────────
+function baseTemplate(content: string): string {
+  return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${SITE_NAME}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#FAF6EF;font-family:Georgia,serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#FAF6EF;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#5C3D2E;padding:28px 40px;border-radius:2px 2px 0 0;">
+              <p style="margin:0;font-family:Georgia,serif;font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#C8912A;">Les Ateliers</p>
+              <p style="margin:4px 0 0;font-family:Georgia,serif;font-size:20px;color:#F5EDD8;font-weight:600;">de la Source</p>
+            </td>
+          </tr>
+          <!-- Body -->
+          <tr>
+            <td style="background-color:#FFFFFF;padding:40px;border:1px solid #D4C4A8;border-top:none;">
+              ${content}
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="background-color:#F5EDD8;padding:20px 40px;border:1px solid #D4C4A8;border-top:none;border-radius:0 0 2px 2px;">
+              <p style="margin:0;font-family:Arial,sans-serif;font-size:11px;color:#7A6355;line-height:1.6;">
+                © ${new Date().getFullYear()} ${SITE_NAME} · 
+                <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://ateliersdelasource.fr'}" style="color:#C8912A;text-decoration:none;">
+                  Visiter le site
+                </a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`
+}
+
+// ─── Emails transactionnels ───────────────────────────────────
+
+/**
+ * Email de confirmation d'inscription (envoyé au nouveau membre)
+ */
+export async function sendWelcomeEmail(params: {
+  to: string
+  firstName: string
+}) {
+  const resend = getResend()
+  const { to, firstName } = params
+
+  const content = `
+    <h1 style="font-family:Georgia,serif;font-size:24px;color:#5C3D2E;margin:0 0 16px;">
+      Bienvenue, ${firstName} 👋
+    </h1>
+    <p style="font-family:Arial,sans-serif;font-size:15px;color:#2D1F14;line-height:1.7;margin:0 0 16px;">
+      Votre espace membre aux <strong>Ateliers de la Source</strong> vient d'être créé.
+    </p>
+    <p style="font-family:Arial,sans-serif;font-size:15px;color:#2D1F14;line-height:1.7;margin:0 0 24px;">
+      Vous pouvez dès maintenant compléter votre profil, découvrir les prochains stages et suivre votre parcours personnel.
+    </p>
+    <table cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+      <tr>
+        <td style="background-color:#5C3D2E;border-radius:2px;padding:14px 28px;">
+          <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://ateliersdelasource.fr'}/espace-membre" 
+             style="font-family:Arial,sans-serif;font-size:14px;color:#F5EDD8;text-decoration:none;font-weight:600;letter-spacing:0.5px;">
+            Accéder à mon espace →
+          </a>
+        </td>
+      </tr>
+    </table>
+    <p style="font-family:Arial,sans-serif;font-size:13px;color:#7A6355;line-height:1.6;margin:0;border-top:1px solid #D4C4A8;padding-top:16px;">
+      Si vous n'êtes pas à l'origine de cette inscription, vous pouvez ignorer cet email.
+    </p>
+  `
+
+  return resend.emails.send({
+    from: FROM_EMAIL,
+    to,
+    subject: `Bienvenue aux Ateliers de la Source, ${firstName} !`,
+    html: baseTemplate(content),
+  })
+}
+
+/**
+ * Email de notification de contact (envoyé à Gabriel)
+ */
+export async function sendContactNotification(params: {
+  name: string
+  email: string
+  phone?: string
+  subject?: string
+  message: string
+}) {
+  const resend = getResend()
+  const { name, email, phone, subject, message } = params
+
+  const content = `
+    <h1 style="font-family:Georgia,serif;font-size:22px;color:#5C3D2E;margin:0 0 20px;">
+      Nouveau message de contact
+    </h1>
+    <table cellpadding="0" cellspacing="0" width="100%" style="margin-bottom:24px;">
+      <tr>
+        <td style="padding:8px 0;border-bottom:1px solid #F0E8D8;">
+          <span style="font-family:Arial,sans-serif;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#7A6355;">Nom</span>
+          <p style="margin:4px 0 0;font-family:Arial,sans-serif;font-size:15px;color:#2D1F14;font-weight:600;">${name}</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;border-bottom:1px solid #F0E8D8;">
+          <span style="font-family:Arial,sans-serif;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#7A6355;">Email</span>
+          <p style="margin:4px 0 0;">
+            <a href="mailto:${email}" style="font-family:Arial,sans-serif;font-size:15px;color:#C8912A;">${email}</a>
+          </p>
+        </td>
+      </tr>
+      ${phone ? `
+      <tr>
+        <td style="padding:8px 0;border-bottom:1px solid #F0E8D8;">
+          <span style="font-family:Arial,sans-serif;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#7A6355;">Téléphone</span>
+          <p style="margin:4px 0 0;font-family:Arial,sans-serif;font-size:15px;color:#2D1F14;">${phone}</p>
+        </td>
+      </tr>` : ''}
+      ${subject ? `
+      <tr>
+        <td style="padding:8px 0;border-bottom:1px solid #F0E8D8;">
+          <span style="font-family:Arial,sans-serif;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#7A6355;">Sujet</span>
+          <p style="margin:4px 0 0;font-family:Arial,sans-serif;font-size:15px;color:#2D1F14;">${subject}</p>
+        </td>
+      </tr>` : ''}
+    </table>
+    <div style="background-color:#FAF6EF;border:1px solid #D4C4A8;border-radius:2px;padding:20px;margin-bottom:24px;">
+      <span style="font-family:Arial,sans-serif;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#7A6355;display:block;margin-bottom:10px;">Message</span>
+      <p style="font-family:Arial,sans-serif;font-size:15px;color:#2D1F14;line-height:1.7;margin:0;white-space:pre-wrap;">${message}</p>
+    </div>
+    <table cellpadding="0" cellspacing="0">
+      <tr>
+        <td style="background-color:#C8912A;border-radius:2px;padding:12px 24px;">
+          <a href="mailto:${email}" 
+             style="font-family:Arial,sans-serif;font-size:14px;color:#FFFFFF;text-decoration:none;font-weight:600;">
+            Répondre à ${name} →
+          </a>
+        </td>
+      </tr>
+    </table>
+  `
+
+  return resend.emails.send({
+    from: FROM_EMAIL,
+    to: CONTACT_EMAIL,
+    replyTo: email,
+    subject: `[Contact] ${subject || 'Message de ' + name}`,
+    html: baseTemplate(content),
+  })
+}
+
+/**
+ * Email de confirmation au visiteur qui a rempli le formulaire de contact
+ */
+export async function sendContactConfirmation(params: {
+  to: string
+  name: string
+}) {
+  const resend = getResend()
+  const { to, name } = params
+
+  const content = `
+    <h1 style="font-family:Georgia,serif;font-size:22px;color:#5C3D2E;margin:0 0 16px;">
+      Votre message a bien été reçu
+    </h1>
+    <p style="font-family:Arial,sans-serif;font-size:15px;color:#2D1F14;line-height:1.7;margin:0 0 16px;">
+      Bonjour ${name},
+    </p>
+    <p style="font-family:Arial,sans-serif;font-size:15px;color:#2D1F14;line-height:1.7;margin:0 0 16px;">
+      Merci pour votre message. Gabriel ou Amélie vous répondra dans les meilleurs délais, généralement sous 48 heures.
+    </p>
+    <p style="font-family:Arial,sans-serif;font-size:15px;color:#2D1F14;line-height:1.7;margin:0 0 24px;">
+      En attendant, vous pouvez découvrir les prochains stages et activités sur notre site.
+    </p>
+    <table cellpadding="0" cellspacing="0">
+      <tr>
+        <td style="background-color:#5C3D2E;border-radius:2px;padding:14px 28px;">
+          <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'https://ateliersdelasource.fr'}/evenements" 
+             style="font-family:Arial,sans-serif;font-size:14px;color:#F5EDD8;text-decoration:none;font-weight:600;">
+            Voir les prochains stages →
+          </a>
+        </td>
+      </tr>
+    </table>
+  `
+
+  return resend.emails.send({
+    from: FROM_EMAIL,
+    to,
+    subject: 'Votre message a bien été reçu — Les Ateliers de la Source',
+    html: baseTemplate(content),
+  })
+}
+
+/**
+ * Email générique — utilisé pour les webhooks Make/n8n
+ */
+export async function sendEmail(params: {
+  to: string | string[]
+  subject: string
+  html: string
+  replyTo?: string
+}) {
+  const resend = getResend()
+  return resend.emails.send({
+    from: FROM_EMAIL,
+    to: params.to,
+    subject: params.subject,
+    html: params.html,
+    replyTo: params.replyTo,
+  })
+}

@@ -1,14 +1,33 @@
 'use client'
 // src/features/evenements/EventsListPage.tsx
+// Accepte les données Sanity (via page.tsx server) ou utilise les données statiques intégrées
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { Calendar, MapPin, ArrowRight, Filter } from 'lucide-react'
 import { Container } from '@/components/ui/Container'
 import { Badge } from '@/components/ui/Badge'
+import type { Event } from '@/types'
+import { imageUrl } from '@/lib/sanity/image'
 
 const MONTHS_SHORT = ['jan', 'fév', 'mar', 'avr', 'mai', 'jun', 'jul', 'aoû', 'sep', 'oct', 'nov', 'déc']
 
-const allEvents = [
+// ─── Type normalisé pour l'affichage ─────────────────────────────────────
+type DisplayEvent = {
+  id: string
+  title: string
+  slug: string
+  type: string
+  startDate: string
+  endDate?: string
+  location: string
+  owner?: string
+  priceLabel?: string
+  excerpt?: string
+  imageUrl: string
+}
+
+// ─── Données statiques (fallback) ────────────────────────────────────────
+const STATIC_EVENTS: DisplayEvent[] = [
   {
     id: 'e1',
     title: 'Théâtre des Doubles Karmiques',
@@ -32,12 +51,12 @@ const allEvents = [
     location: 'Les Ateliers de la Source',
     owner: 'Gabriel',
     priceLabel: 'Sur devis',
-    excerpt: 'Atelier collectif autour de l\'émerveillement et de la présence au monde.',
+    excerpt: "Atelier collectif autour de l'émerveillement et de la présence au monde.",
     imageUrl: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=800&q=80',
   },
   {
     id: 'e3',
-    title: 'Dernières Places disponibles — Stage printemps',
+    title: 'Dernières Places — Stage printemps',
     slug: 'dernieres-places-stage-avril',
     type: 'Stage',
     startDate: '2025-04-21',
@@ -63,6 +82,35 @@ const allEvents = [
   },
 ]
 
+// ─── Normalisation Sanity → DisplayEvent ─────────────────────────────────
+function normalizeSanityEvent(e: Event): DisplayEvent {
+  const slug = typeof e.slug === 'object' ? (e.slug as { current: string }).current : String(e.slug ?? '')
+  const img = e.coverImage
+    ? imageUrl(e.coverImage, 800, 500) || ''
+    : 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80'
+  const ownerName = typeof e.owner === 'object' && e.owner
+    ? (e.owner as { name?: string }).name ?? ''
+    : ''
+  // dates from Sanity may be nested
+  const dates = (e as { dates?: { startDate?: string; endDate?: string } }).dates
+  const startDate = dates?.startDate ?? (e as { startDate?: string }).startDate ?? ''
+  const endDate = dates?.endDate ?? (e as { endDate?: string }).endDate
+
+  return {
+    id: e._id ?? slug,
+    title: e.title ?? '',
+    slug,
+    type: e.type ?? 'Stage',
+    startDate,
+    endDate,
+    location: typeof e.location === 'string' ? e.location : ((e.location as { name?: string })?.name ?? ''),
+    owner: ownerName,
+    priceLabel: e.priceLabel ?? '',
+    excerpt: e.excerpt ?? '',
+    imageUrl: img,
+  }
+}
+
 const typeColors: Record<string, 'ocre' | 'vert' | 'brun' | 'ghost'> = {
   Stage: 'brun',
   Atelier: 'ocre',
@@ -70,7 +118,7 @@ const typeColors: Record<string, 'ocre' | 'vert' | 'brun' | 'ghost'> = {
   Formation: 'ghost',
 }
 
-function EventCard({ event, index }: { event: typeof allEvents[0]; index: number }) {
+function EventCard({ event, index }: { event: DisplayEvent; index: number }) {
   const ref = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(false)
   const startDate = new Date(event.startDate)
@@ -103,6 +151,7 @@ function EventCard({ event, index }: { event: typeof allEvents[0]; index: number
         <article className={`flex gap-0 rounded-sm border overflow-hidden transition-all duration-300 hover:shadow-lg ${isPast ? 'opacity-60 border-[#D4C4A8]' : 'border-[#D4C4A8] hover:border-[#C8912A]/60'} bg-white`}>
           {/* Image */}
           <div className="hidden sm:block w-44 flex-shrink-0 overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={event.imageUrl}
               alt={event.title}
@@ -128,23 +177,29 @@ function EventCard({ event, index }: { event: typeof allEvents[0]; index: number
                 <h2 className="font-serif text-lg text-[#5C3D2E] group-hover:text-[#C8912A] leading-snug transition-colors duration-200">
                   {event.title}
                 </h2>
-                <p className="mt-2 text-sm font-sans text-[#7A6355] line-clamp-2 leading-relaxed">
-                  {event.excerpt}
-                </p>
+                {event.excerpt && (
+                  <p className="mt-2 text-sm font-sans text-[#7A6355] line-clamp-2 leading-relaxed">
+                    {event.excerpt}
+                  </p>
+                )}
               </div>
             </div>
 
             {/* Footer */}
             <div className="mt-auto px-5 py-3 border-t border-[#D4C4A8]/50 flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-4 text-xs font-sans text-[#7A6355]">
-                <span className="flex items-center gap-1">
-                  <MapPin size={11} className="text-[#C8912A]" />
-                  {event.location}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Calendar size={11} className="text-[#C8912A]" />
-                  {event.priceLabel}
-                </span>
+                {event.location && (
+                  <span className="flex items-center gap-1">
+                    <MapPin size={11} className="text-[#C8912A]" />
+                    {event.location}
+                  </span>
+                )}
+                {event.priceLabel && (
+                  <span className="flex items-center gap-1">
+                    <Calendar size={11} className="text-[#C8912A]" />
+                    {event.priceLabel}
+                  </span>
+                )}
               </div>
               <span className="flex items-center gap-1 text-xs font-sans font-medium text-[#C8912A]">
                 Détails
@@ -160,10 +215,21 @@ function EventCard({ event, index }: { event: typeof allEvents[0]; index: number
 
 const EVENT_TYPES = ['Tous', 'Stage', 'Atelier', 'Spectacle', 'Formation']
 
-export function EventsListPage() {
+interface Props {
+  /** Si fourni (depuis Sanity), remplace les données statiques */
+  sanityEvents?: Event[] | null
+}
+
+export function EventsListPage({ sanityEvents }: Props = {}) {
   const [filter, setFilter] = useState('Tous')
   const [heroVisible, setHeroVisible] = useState(false)
-  const filtered = filter === 'Tous' ? allEvents : allEvents.filter(e => e.type === filter)
+
+  // Utilise Sanity si disponible, sinon les données statiques
+  const events: DisplayEvent[] = sanityEvents && sanityEvents.length > 0
+    ? sanityEvents.map(normalizeSanityEvent)
+    : STATIC_EVENTS
+
+  const filtered = filter === 'Tous' ? events : events.filter(e => e.type === filter)
   const upcoming = filtered.filter(e => new Date(e.startDate) >= new Date())
   const past = filtered.filter(e => new Date(e.startDate) < new Date())
 
@@ -194,7 +260,7 @@ export function EventsListPage() {
       {/* Filters */}
       <div className="bg-[#F5EDD8] border-b border-[#D4C4A8] sticky top-[64px] z-30">
         <Container>
-          <div className="flex items-center gap-2 py-3 overflow-x-auto scrollbar-hide">
+          <div className="flex items-center gap-2 py-3 overflow-x-auto">
             <Filter size={14} className="text-[#7A6355] flex-shrink-0" />
             {EVENT_TYPES.map(type => (
               <button

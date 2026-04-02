@@ -10,18 +10,36 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Champs manquants' }, { status: 400 })
     }
 
-    // TODO: Connect email provider (Resend, SendGrid, etc.)
-    // For now, log to console. In production, send email here.
+    // Validation email basique
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      return NextResponse.json({ error: 'Email invalide' }, { status: 400 })
+    }
+
+    // Log toujours (utile pour le debug)
     console.log('[CONTACT FORM]', { name, email, subject: body.subject, phone: body.phone, message })
 
-    // Example with Resend (uncomment when configured):
-    // const resend = new Resend(process.env.RESEND_API_KEY)
-    // await resend.emails.send({
-    //   from: 'noreply@ateliersdelasource.fr',
-    //   to: process.env.CONTACT_EMAIL!,
-    //   subject: `Nouveau message de ${name}`,
-    //   html: `<p><strong>Nom:</strong> ${name}</p><p><strong>Email:</strong> ${email}</p><p><strong>Message:</strong></p><p>${message}</p>`,
-    // })
+    // Envoi avec Resend si la clé est configurée
+    if (process.env.RESEND_API_KEY) {
+      try {
+        const { sendContactNotification, sendContactConfirmation } = await import('@/lib/email/resend')
+
+        // Email à Gabriel
+        await sendContactNotification({
+          name,
+          email,
+          phone: body.phone,
+          subject: body.subject,
+          message,
+        })
+
+        // Email de confirmation au visiteur
+        await sendContactConfirmation({ to: email, name })
+      } catch (emailErr) {
+        // Ne pas bloquer la réponse si l'email échoue
+        console.error('[CONTACT EMAIL ERROR]', emailErr)
+      }
+    }
 
     return NextResponse.json({ success: true })
   } catch (err) {
