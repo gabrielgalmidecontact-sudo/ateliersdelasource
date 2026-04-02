@@ -29,18 +29,15 @@ export function LoginPage() {
     setError('')
     setStatus('loading')
 
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 10000)
-
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
         body: JSON.stringify({
           email: form.email.trim(),
           password: form.password,
         }),
-        signal: controller.signal,
       })
 
       const data = await res.json().catch(() => ({}))
@@ -49,25 +46,21 @@ export function LoginPage() {
         throw new Error(data?.error || 'Email ou mot de passe incorrect')
       }
 
-      const callbackUrl = searchParams.get('callbackUrl')
+      const target =
+        data?.user?.role === 'admin'
+          ? '/admin'
+          : searchParams.get('callbackUrl') || '/espace-membre'
 
-      if (data?.user?.role === 'admin') {
-        window.location.assign('/admin')
-        return
-      }
-
-      window.location.assign(callbackUrl || '/espace-membre')
+      window.location.href = target
+      return
     } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') {
-        setError('La connexion a pris trop de temps. Veuillez réessayer.')
-      } else if (err instanceof Error) {
+      if (err instanceof Error) {
         setError(err.message)
       } else {
         setError('Erreur de connexion')
       }
       setStatus('error')
     } finally {
-      clearTimeout(timeout)
       setStatus('idle')
     }
   }
