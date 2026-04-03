@@ -8,6 +8,7 @@ import { ArrowLeft, Plus, ChevronDown, ChevronUp, Star, BookOpen, MessageSquare,
 import { useAuth } from '@/lib/auth/AuthContext'
 import { Container } from '@/components/ui/Container'
 import { Button } from '@/components/ui/Button'
+import { BeginnerMode } from '@/features/member/BeginnerMode'
 import type { StageLog, TrainerNote, MemberNote } from '@/lib/supabase/types'
 
 type StageWithNotes = StageLog & {
@@ -22,9 +23,9 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  upcoming: 'bg-blue-50 text-blue-700 border-blue-200',
-  completed: 'bg-green-50 text-green-700 border-green-200',
-  cancelled: 'bg-gray-50 text-gray-500 border-gray-200',
+  upcoming: 'bg-[#FFF8E8] text-[#C8912A] border-[#E0B060]',
+  completed: 'bg-[#F0F5EC] text-[#4A5E3A] border-[#B8D4A8]',
+  cancelled: 'bg-[#F5F5F5] text-[#7A6355] border-[#D4C4A8]',
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -337,11 +338,18 @@ export function MemberSuiviPage() {
     <>
       <div className="pt-32 pb-12 bg-[#3B2315]">
         <Container>
-          <Link href="/espace-membre" className="text-[#C8A888] hover:text-[#F5EDD8] transition-colors text-sm font-sans flex items-center gap-1 mb-4">
-            <ArrowLeft size={14} /> Mon chemin
-          </Link>
-          <h1 className="font-serif text-3xl text-[#F5EDD8]">Mes expériences</h1>
-          <p className="text-sm font-sans text-[#C8A888] mt-1">Fiches de suivi · Réflexions · Prises de conscience</p>
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <Link href="/espace-membre" className="text-[#C8A888] hover:text-[#F5EDD8] transition-colors text-xs font-sans flex items-center gap-1 mb-3">
+                <ArrowLeft size={12} /> Livre de bord
+              </Link>
+              <h1 className="font-serif text-3xl text-[#F5EDD8]">Mes expériences</h1>
+              <p className="text-sm font-sans text-[#C8A888] mt-1">Fiches de suivi · Réflexions · Prises de conscience</p>
+            </div>
+            <div className="mt-2">
+              <BeginnerMode context="member-suivi" />
+            </div>
+          </div>
         </Container>
       </div>
 

@@ -1,15 +1,16 @@
 'use client'
 // src/features/admin/AdminMemberDetailPage.tsx
-// Fiche complète d'un membre — visible par Gabriel/Amélie
+// Espace accompagnant — fiche complète d'un membre
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, User, FileText, Calendar, BookOpen, Plus, Save, Eye, EyeOff, Star } from 'lucide-react'
+import { ArrowLeft, User, FileText, Calendar, BookOpen, Plus, Save, Eye, EyeOff, Star, Lightbulb } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthContext'
 import { Container } from '@/components/ui/Container'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
+import { AdminBeginnerMode } from '@/features/admin/AdminBeginnerMode'
 import type { Profile, StageLog, TrainerNote, Reservation, MemberNote } from '@/lib/supabase/types'
 
 type FullMemberData = {
@@ -28,9 +29,15 @@ const CATEGORY_OPTIONS = [
 ]
 
 const STATUS_COLORS: Record<string, string> = {
-  upcoming: 'bg-blue-50 text-blue-700',
-  completed: 'bg-green-50 text-green-700',
-  cancelled: 'bg-gray-50 text-gray-500',
+  upcoming: 'bg-[#FFF8E8] text-[#C8912A] border border-[#E0B060]',
+  completed: 'bg-[#F0F5EC] text-[#4A5E3A] border border-[#B8D4A8]',
+  cancelled: 'bg-[#F5F5F5] text-[#7A6355] border border-[#D4C4A8]',
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  upcoming: 'À venir',
+  completed: 'Effectué',
+  cancelled: 'Annulé',
 }
 
 function StarDisplay({ value }: { value: number | null }) {
@@ -160,19 +167,22 @@ export function AdminMemberDetailPage({ memberId }: { memberId: string }) {
       {/* Header admin */}
       <div className="bg-[#3B2315] border-b border-[#5C3D2E]">
         <Container>
-          <div className="flex items-center gap-3 py-4 flex-wrap">
-            <Link href="/admin/membres" className="text-[#C8A888] hover:text-white transition-colors">
-              <ArrowLeft size={18} />
-            </Link>
-            <Link href="/" className="font-serif text-lg text-[#F5EDD8] hover:text-[#C8912A] transition-colors">
-              Les Ateliers de la Source
-            </Link>
-            <span className="text-[#7A6355]">/</span>
-            <Link href="/admin" className="text-sm font-sans text-[#C8A888] hover:text-white transition-colors">Admin</Link>
-            <span className="text-[#7A6355]">/</span>
-            <Link href="/admin/membres" className="text-sm font-sans text-[#C8A888] hover:text-white transition-colors">Membres</Link>
-            <span className="text-[#7A6355]">/</span>
-            <span className="text-sm font-sans text-white">{name}</span>
+          <div className="flex items-center justify-between py-4 flex-wrap gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              <Link href="/admin/membres" className="text-[#C8A888] hover:text-white transition-colors">
+                <ArrowLeft size={18} />
+              </Link>
+              <Link href="/" className="font-serif text-base text-[#F5EDD8] hover:text-[#C8912A] transition-colors">
+                Les Ateliers de la Source
+              </Link>
+              <span className="text-[#7A6355]">/</span>
+              <Link href="/admin" className="text-sm font-sans text-[#C8A888] hover:text-white transition-colors">Admin</Link>
+              <span className="text-[#7A6355]">/</span>
+              <Link href="/admin/membres" className="text-sm font-sans text-[#C8A888] hover:text-white transition-colors">Membres</Link>
+              <span className="text-[#7A6355]">/</span>
+              <span className="text-sm font-sans text-white">{name}</span>
+            </div>
+            <AdminBeginnerMode />
           </div>
         </Container>
       </div>
@@ -182,24 +192,38 @@ export function AdminMemberDetailPage({ memberId }: { memberId: string }) {
           <div style={{ opacity: visiblePage ? 1 : 0, transform: visiblePage ? 'none' : 'translateY(16px)', transition: 'opacity 0.5s ease, transform 0.5s ease' }}>
 
             {/* Profil header */}
-            <div className="bg-white rounded-sm border border-[#D4C4A8] p-6 mb-6 flex items-center gap-5 flex-wrap">
-              <div className="w-16 h-16 rounded-full bg-[#5C3D2E] flex items-center justify-center text-white font-serif text-2xl flex-shrink-0">
-                {initials || <User size={28} />}
+            <div className="bg-white rounded-sm border border-[#D4C4A8] mb-6 overflow-hidden">
+              <div className="bg-[#3B2315] px-6 py-3">
+                <p className="text-[10px] font-sans uppercase tracking-widest text-[#C8912A]">Espace accompagnant</p>
               </div>
-              <div className="flex-1 min-w-0">
-                <h1 className="font-serif text-2xl text-[#5C3D2E]">{name}</h1>
-                <p className="text-sm font-sans text-[#7A6355]">{profile.email}</p>
-                {profile.phone && <p className="text-sm font-sans text-[#7A6355]">{profile.phone}</p>}
-                {profile.city && <p className="text-xs font-sans text-[#7A6355] mt-0.5">📍 {profile.city}</p>}
-              </div>
-              <div className="flex gap-3 flex-wrap">
-                <div className="text-center px-4 py-2 bg-[#F5EDD8] rounded-sm">
-                  <div className="font-serif text-2xl text-[#5C3D2E]">{stages.length}</div>
-                  <div className="text-xs font-sans text-[#7A6355]">Stages</div>
+              <div className="p-6 flex items-center gap-5 flex-wrap">
+                <div className="w-16 h-16 rounded-full bg-[#5C3D2E] flex items-center justify-center text-white font-serif text-2xl flex-shrink-0">
+                  {initials || <User size={28} />}
                 </div>
-                <div className="text-center px-4 py-2 bg-[#F5EDD8] rounded-sm">
-                  <div className="font-serif text-2xl text-[#5C3D2E]">{trainerNotes.length}</div>
-                  <div className="text-xs font-sans text-[#7A6355]">Mes notes</div>
+                <div className="flex-1 min-w-0">
+                  <h1 className="font-serif text-2xl text-[#5C3D2E]">{name}</h1>
+                  <p className="text-sm font-sans text-[#7A6355]">{profile.email}</p>
+                  {profile.phone && <p className="text-sm font-sans text-[#7A6355]">{profile.phone}</p>}
+                  {profile.city && <p className="text-xs font-sans text-[#7A6355] mt-0.5">📍 {profile.city}</p>}
+                  <p className="text-xs font-sans text-[#C8A888] mt-1">
+                    Membre depuis {new Date(profile.created_at).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+                  </p>
+                </div>
+                <div className="flex gap-3 flex-wrap">
+                  <div className="text-center px-4 py-3 bg-[#F5EDD8] rounded-sm border border-[#E8D8B8]">
+                    <div className="font-serif text-2xl text-[#5C3D2E]">{stages.length}</div>
+                    <div className="text-xs font-sans text-[#7A6355]">Expériences</div>
+                  </div>
+                  <div className="text-center px-4 py-3 bg-[#F5EDD8] rounded-sm border border-[#E8D8B8]">
+                    <div className="font-serif text-2xl text-[#5C3D2E]">{trainerNotes.length}</div>
+                    <div className="text-xs font-sans text-[#7A6355]">Mes guidances</div>
+                  </div>
+                  <div className="text-center px-4 py-3 bg-[#F5EDD8] rounded-sm border border-[#E8D8B8]">
+                    <div className="font-serif text-2xl text-[#5C3D2E]">
+                      {stages.filter(s => s.status === 'completed').length}
+                    </div>
+                    <div className="text-xs font-sans text-[#7A6355]">Effectués</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -265,7 +289,7 @@ export function AdminMemberDetailPage({ memberId }: { memberId: string }) {
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="font-serif text-lg text-[#5C3D2E]">{stage.stage_title}</h3>
                           <span className={`text-xs font-sans px-2 py-0.5 rounded-full ${STATUS_COLORS[stage.status]}`}>
-                            {stage.status === 'upcoming' ? 'À venir' : stage.status === 'completed' ? 'Effectué' : 'Annulé'}
+                            {STATUS_LABELS[stage.status] || stage.status}
                           </span>
                         </div>
                         <p className="text-xs font-sans text-[#7A6355]">
@@ -286,12 +310,15 @@ export function AdminMemberDetailPage({ memberId }: { memberId: string }) {
                       <div className="mb-3 p-3 bg-[#F0F5EC] rounded-sm">
                         <p className="text-xs font-sans uppercase tracking-wider text-[#4A5E3A] mb-1">Réflexion après</p>
                         <p className="text-sm font-sans text-[#2D1F14] leading-relaxed">{stage.reflection_after}</p>
-                        {stage.key_insight && (
-                          <div className="mt-2 border-l-4 border-[#C8912A] pl-3">
-                            <p className="text-xs font-sans text-[#C8912A] mb-0.5">Prise de conscience</p>
-                            <p className="text-sm font-sans italic text-[#5C3D2E]">« {stage.key_insight} »</p>
-                          </div>
-                        )}
+                      </div>
+                    )}
+                    {stage.key_insight && (
+                      <div className="mb-3 p-3 bg-[#FFF8E8] rounded-sm border border-[#E0B060] flex items-start gap-3">
+                        <Lightbulb size={15} className="text-[#C8912A] flex-shrink-0 mt-0.5" aria-hidden="true" />
+                        <div>
+                          <p className="text-xs font-sans uppercase tracking-wider text-[#C8912A] mb-1">Insight clé du membre</p>
+                          <p className="text-sm font-sans italic text-[#5C3D2E] leading-relaxed">« {stage.key_insight} »</p>
+                        </div>
                       </div>
                     )}
 

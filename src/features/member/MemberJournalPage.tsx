@@ -8,6 +8,7 @@ import { ArrowLeft, Feather, Trash2, Plus, X, Loader2 } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthContext'
 import { Container } from '@/components/ui/Container'
 import { Button } from '@/components/ui/Button'
+import { BeginnerMode } from '@/features/member/BeginnerMode'
 import type { GlobalNote } from '@/lib/supabase/types'
 
 const MONTHS_FR = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin',
@@ -137,19 +138,26 @@ export function MemberJournalPage() {
       {/* Header */}
       <div className="pt-32 pb-12 bg-[#3B2315]">
         <Container>
-          <Link
-            href="/espace-membre"
-            className="text-[#C8A888] hover:text-[#F5EDD8] transition-colors text-sm font-sans flex items-center gap-1 mb-4"
-          >
-            <ArrowLeft size={14} /> Mon chemin
-          </Link>
-          <div className="flex items-end gap-3">
-            <Feather size={28} className="text-[#C8912A] mb-1" aria-hidden="true" />
+          <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
-              <h1 className="font-serif text-3xl text-[#F5EDD8]">Journal</h1>
-              <p className="text-sm font-sans text-[#C8A888] mt-0.5">
-                Pensées libres, intuitions, prises de conscience du quotidien
-              </p>
+              <Link
+                href="/espace-membre"
+                className="text-[#C8A888] hover:text-[#F5EDD8] transition-colors text-xs font-sans flex items-center gap-1 mb-3"
+              >
+                <ArrowLeft size={12} /> Livre de bord
+              </Link>
+              <div className="flex items-end gap-3">
+                <Feather size={24} className="text-[#C8912A] mb-1" aria-hidden="true" />
+                <div>
+                  <h1 className="font-serif text-3xl text-[#F5EDD8]">Journal libre</h1>
+                  <p className="text-sm font-sans text-[#C8A888] mt-0.5">
+                    Pensées, intuitions, prises de conscience du quotidien
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-2">
+              <BeginnerMode context="member-journal" />
             </div>
           </div>
         </Container>
