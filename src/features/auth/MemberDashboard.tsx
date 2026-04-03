@@ -11,7 +11,9 @@ import { MemberProgressCircles } from '@/features/member/MemberProgressCircles'
 import { MemberCompetencyBars } from '@/features/member/MemberCompetencyBars'
 import { MemberProgressChart } from '@/features/member/MemberProgressChart'
 import { BeginnerMode } from '@/features/member/BeginnerMode'
-import type { StageLog } from '@/lib/supabase/types'
+import type { StageLog, MemberCompetency, Competency } from '@/lib/supabase/types'
+
+type MemberCompetencyWithComp = MemberCompetency & { competency?: Competency }
 
 const MONTHS_FR = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin',
   'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre']
@@ -149,7 +151,9 @@ export function MemberDashboard() {
   const [stages, setStages] = useState<StageLog[]>([])
   const [journalCount, setJournalCount] = useState(0)
   const [notesCount, setNotesCount] = useState(0)
+  const [competencies, setCompetencies] = useState<MemberCompetencyWithComp[]>([])
   const [dataLoading, setDataLoading] = useState(true)
+  const [pdfLoading, setPdfLoading] = useState(false)
 
   useEffect(() => {
     if (!isLoading && !user) router.push('/connexion')
@@ -158,9 +162,10 @@ export function MemberDashboard() {
   const loadData = useCallback(async () => {
     if (!user) return
     try {
-      const [stagesRes, journalRes] = await Promise.all([
+      const [stagesRes, journalRes, compRes] = await Promise.all([
         fetch('/api/member/stages', { headers: { Authorization: `Bearer ${user.accessToken}` } }),
         fetch('/api/member/journal', { headers: { Authorization: `Bearer ${user.accessToken}` } }),
+        fetch('/api/member/competencies', { headers: { Authorization: `Bearer ${user.accessToken}` } }),
       ])
       if (stagesRes.ok) {
         const { stages: data } = await stagesRes.json()
@@ -174,6 +179,10 @@ export function MemberDashboard() {
         const { notes } = await journalRes.json()
         setJournalCount((notes || []).length)
       }
+      if (compRes.ok) {
+        const { competencies: comps } = await compRes.json()
+        setCompetencies(comps || [])
+      }
     } finally {
       setDataLoading(false)
     }
@@ -184,6 +193,24 @@ export function MemberDashboard() {
   const handleSignOut = async () => {
     await signOut()
     router.push('/')
+  }
+
+  const handlePdfExport = async () => {
+    if (!user || pdfLoading) return
+    setPdfLoading(true)
+    try {
+      const res = await fetch('/api/member/pdf-export', {
+        headers: { Authorization: `Bearer ${user.accessToken}` },
+      })
+      if (!res.ok) { setPdfLoading(false); return }
+      const data = await res.json()
+      const { generateBookPdf } = await import('@/lib/pdf/generateBookPdf')
+      await generateBookPdf(data)
+    } catch (e) {
+      console.error('PDF export error:', e)
+    } finally {
+      setPdfLoading(false)
+    }
   }
 
   if (isLoading || !user) {
@@ -235,11 +262,13 @@ export function MemberDashboard() {
           {/* Nav secondaire */}
           <nav className="mt-5 flex flex-wrap gap-1.5" aria-label="Navigation espace membre">
             {[
-              { href: '/espace-membre',             label: 'Livre de bord' },
-              { href: '/espace-membre/suivi',        label: 'Expériences' },
-              { href: '/espace-membre/journal',      label: 'Journal' },
-              { href: '/espace-membre/reservations', label: 'Réservations' },
-              { href: '/espace-membre/profil',       label: 'Profil' },
+              { href: '/espace-membre',                   label: 'Livre de bord' },
+              { href: '/espace-membre/suivi',             label: 'Expériences' },
+              { href: '/espace-membre/journal',           label: 'Journal' },
+              { href: '/espace-membre/competences',       label: 'Compétences' },
+              { href: '/espace-membre/questionnaires',    label: 'Questionnaires' },
+              { href: '/espace-membre/reservations',      label: 'Réservations' },
+              { href: '/espace-membre/profil',            label: 'Profil' },
             ].map(item => (
               <Link
                 key={item.href}
@@ -360,14 +389,13 @@ export function MemberDashboard() {
                       {/* Bouton exporter — préparé visuellement */}
                       <div className="mt-5 pt-4 border-t border-[#F0E8DA] flex items-center gap-3">
                         <button
-                          disabled
-                          title="Export PDF — disponible prochainement"
-                          className="flex items-center gap-2 text-xs font-sans text-[#C8A888] border border-dashed border-[#D4C4A8] px-4 py-2 rounded-sm cursor-not-allowed opacity-60"
-                          aria-label="Exporter mon journal en PDF — bientôt disponible"
+                          onClick={handlePdfExport}
+                          disabled={pdfLoading}
+                          className="flex items-center gap-2 text-xs font-sans text-[#5C3D2E] border border-[#D4C4A8] hover:border-[#C8912A] hover:text-[#C8912A] px-4 py-2 rounded-sm transition-all duration-200 disabled:opacity-60 disabled:cursor-wait"
+                          aria-label="Exporter mon livre de bord en PDF"
                         >
                           <Download size={13} />
-                          Exporter mon journal (PDF)
-                          <span className="text-[10px] bg-[#F5EDD8] text-[#7A6355] px-1.5 py-0.5 rounded-full ml-1">bientôt</span>
+                          {pdfLoading ? 'Génération…' : 'Exporter mon journal (PDF)'}
                         </button>
                       </div>
                     </div>
@@ -386,8 +414,11 @@ export function MemberDashboard() {
                     />
                     <StatCard
                       icon={<Star size={16} />}
-                      value={2}
-                      label="Compétences"
+                      value={competencies.length}
+                      label={competencies.filter(c => c.is_validated).length > 0
+                        ? `${competencies.filter(c => c.is_validated).length} validée${competencies.filter(c => c.is_validated).length > 1 ? 's' : ''}`
+                        : 'Compétences'
+                      }
                       color="#C8912A"
                     />
                     <StatCard
@@ -510,7 +541,10 @@ export function MemberDashboard() {
 
                 {/* ── Compétences ── */}
                 <SideBlock title="Mes compétences">
-                  <MemberCompetencyBars stages={stages} />
+                  <MemberCompetencyBars
+                    stages={stages}
+                    realCompetencies={competencies.length > 0 ? competencies : undefined}
+                  />
                 </SideBlock>
 
                 {/* ── Indicateurs circulaires ── */}

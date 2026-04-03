@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   Users, FileText, Calendar, Settings, LogOut, ChevronRight,
-  BookOpen, Feather, Plus, Eye
+  BookOpen, Feather, Plus, Eye, Award
 } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthContext'
 import { Container } from '@/components/ui/Container'
@@ -140,6 +140,22 @@ export function AdminDashboard() {
       color: '#5C3D2E',
     },
     {
+      href: '/admin/questionnaires',
+      icon: <FileText size={20} />,
+      label: 'Questionnaires',
+      description: 'Créer et gérer les questionnaires',
+      badge: null,
+      color: '#C8912A',
+    },
+    {
+      href: '/admin/competences',
+      icon: <Award size={20} />,
+      label: 'Compétences',
+      description: 'Référentiel et validation',
+      badge: null,
+      color: '#4A5E3A',
+    },
+    {
       href: '/studio',
       icon: <Settings size={20} />,
       label: 'Sanity Studio',
@@ -154,15 +170,7 @@ export function AdminDashboard() {
       label: 'Événements',
       description: 'Agenda et inscriptions',
       badge: null,
-      color: '#C8912A',
-    },
-    {
-      href: '/blog',
-      icon: <FileText size={20} />,
-      label: 'Blog',
-      description: 'Articles et actualités',
-      badge: null,
-      color: '#4A5E3A',
+      color: '#7A6355',
     },
   ]
 
@@ -392,10 +400,10 @@ export function AdminDashboard() {
                   <p className="text-[10px] font-sans uppercase tracking-widest text-[#7A6355] mb-2">Prochainement</p>
                   <ul className="space-y-1.5">
                     {[
-                      'Questionnaires personnalisés',
-                      'Compétences validées',
-                      'Export PDF livre de bord',
-                      'Automatisations avancées',
+                      'Rappels automatiques membre',
+                      'Cycles automatisés',
+                      'Partage de journal',
+                      'Tableau de bord multi-accompagnant',
                     ].map(item => (
                       <li key={item} className="flex items-center gap-2 text-xs font-sans text-[#7A6355]">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#C8912A] flex-shrink-0" aria-hidden="true" />

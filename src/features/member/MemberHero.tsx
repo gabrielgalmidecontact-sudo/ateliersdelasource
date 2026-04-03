@@ -82,11 +82,13 @@ export function MemberHero({ firstName, email, stagesCount, notesCount, lastActi
         {/* Navigation interne */}
         <nav className="mt-8 flex flex-wrap gap-2" aria-label="Navigation espace membre">
           {[
-            { href: '/espace-membre', label: 'Mon chemin' },
-            { href: '/espace-membre/suivi', label: 'Expériences' },
-            { href: '/espace-membre/journal', label: 'Journal' },
-            { href: '/espace-membre/reservations', label: 'Réservations' },
-            { href: '/espace-membre/profil', label: 'Profil' },
+            { href: '/espace-membre',                 label: 'Mon chemin' },
+            { href: '/espace-membre/suivi',            label: 'Expériences' },
+            { href: '/espace-membre/journal',          label: 'Journal' },
+            { href: '/espace-membre/competences',      label: 'Compétences' },
+            { href: '/espace-membre/questionnaires',   label: 'Questionnaires' },
+            { href: '/espace-membre/reservations',     label: 'Réservations' },
+            { href: '/espace-membre/profil',           label: 'Profil' },
           ].map(item => (
             <Link
               key={item.href}

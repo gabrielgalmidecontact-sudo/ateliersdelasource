@@ -61,7 +61,7 @@ export interface TrainerNote {
   stage_log_id: string | null
   trainer_name: string
   content: string
-  category: 'observation' | 'encouragement' | 'recommendation' | 'general'
+  category: 'observation' | 'encouragement' | 'piste' | 'recommendation' | 'general'
   is_visible_to_member: boolean
   created_at: string
   updated_at: string
@@ -90,6 +90,117 @@ export interface GlobalNote {
   created_at: string
 }
 
+// ─── Compétences définies par Gabriel ─────────────────────────
+export interface Competency {
+  id: string
+  name: string
+  description: string | null
+  category: string | null
+  icon: string | null
+  sort_order: number
+  created_at: string
+}
+
+// ─── Compétences d'un membre ──────────────────────────────────
+export interface MemberCompetency {
+  id: string
+  member_id: string
+  competency_id: string
+  level: number           // 0-100
+  is_validated: boolean
+  validated_at: string | null
+  validated_by: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+  // Joins
+  competency?: Competency
+}
+
+// ─── Templates de questionnaire ───────────────────────────────
+export interface QuestionnaireTemplate {
+  id: string
+  title: string
+  description: string | null
+  stage_log_id: string | null   // optionally linked to a stage type
+  is_active: boolean
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+// ─── Questions d'un questionnaire ─────────────────────────────
+export interface QuestionnaireQuestion {
+  id: string
+  template_id: string
+  question_text: string
+  question_type: 'text' | 'rating' | 'choice' | 'yesno'
+  options: string[] | null      // for choice type
+  is_required: boolean
+  sort_order: number
+  created_at: string
+}
+
+// ─── Soumission d'un questionnaire par un membre ──────────────
+export interface QuestionnaireSubmission {
+  id: string
+  template_id: string
+  member_id: string
+  stage_log_id: string | null
+  submitted_at: string
+  // Joins
+  template?: QuestionnaireTemplate
+  answers?: QuestionnaireAnswer[]
+}
+
+// ─── Réponse à une question ───────────────────────────────────
+export interface QuestionnaireAnswer {
+  id: string
+  submission_id: string
+  question_id: string
+  answer_text: string | null
+  answer_rating: number | null
+  answer_choice: string | null
+  answer_yesno: boolean | null
+  created_at: string
+  // Joins
+  question?: QuestionnaireQuestion
+}
+
+// ─── Entrée de journal de transformation ──────────────────────
+export interface JournalEntry {
+  id: string
+  member_id: string
+  stage_log_id: string | null
+  title: string | null
+  content: string
+  entry_type: 'reflection' | 'free' | 'before' | 'after'
+  image_url: string | null
+  is_private: boolean
+  created_at: string
+  updated_at: string
+}
+
+// ─── Export PDF du livre de bord ──────────────────────────────
+export interface BookExport {
+  id: string
+  member_id: string
+  file_url: string | null
+  status: 'pending' | 'ready' | 'error'
+  created_at: string
+}
+
+// ─── Log des automations ──────────────────────────────────────
+export interface AutomationLog {
+  id: string
+  trigger_type: string
+  member_id: string | null
+  stage_log_id: string | null
+  payload: Json
+  status: 'success' | 'error'
+  created_at: string
+}
+
 // ─── Helpers ──────────────────────────────────────────────────
 export type ProfileWithStats = Profile & {
   stages_count: number
@@ -98,9 +209,6 @@ export type ProfileWithStats = Profile & {
 }
 
 // ─── Database Schema — format compatible Supabase JS v2 ───────
-// Note: Tables use Record<string, unknown> based Row types so that
-// the Supabase generic type system resolves correctly (avoids 'never' type errors).
-// Runtime type safety is enforced at the interface level (Profile, StageLog, etc.)
 export interface Database {
   public: {
     Tables: {
@@ -156,6 +264,7 @@ export interface Database {
           newsletter_spectacles?: boolean
           newsletter_blog?: boolean
           newsletter_amelie?: boolean
+          updated_at?: string
         }
         Relationships: []
       }
@@ -310,6 +419,238 @@ export interface Database {
         }
         Update: {
           content?: string
+        }
+        Relationships: []
+      }
+      competencies: {
+        Row: Record<string, unknown> & {
+          id: string
+          name: string
+          description: string | null
+          category: string | null
+          icon: string | null
+          sort_order: number
+          created_at: string
+        }
+        Insert: {
+          name: string
+          description?: string | null
+          category?: string | null
+          icon?: string | null
+          sort_order?: number
+        }
+        Update: {
+          name?: string
+          description?: string | null
+          category?: string | null
+          icon?: string | null
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      member_competencies: {
+        Row: Record<string, unknown> & {
+          id: string
+          member_id: string
+          competency_id: string
+          level: number
+          is_validated: boolean
+          validated_at: string | null
+          validated_by: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          member_id: string
+          competency_id: string
+          level?: number
+          is_validated?: boolean
+          validated_at?: string | null
+          validated_by?: string | null
+          notes?: string | null
+        }
+        Update: {
+          level?: number
+          is_validated?: boolean
+          validated_at?: string | null
+          validated_by?: string | null
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      questionnaire_templates: {
+        Row: Record<string, unknown> & {
+          id: string
+          title: string
+          description: string | null
+          stage_log_id: string | null
+          is_active: boolean
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          title: string
+          description?: string | null
+          stage_log_id?: string | null
+          is_active?: boolean
+          created_by?: string | null
+        }
+        Update: {
+          title?: string
+          description?: string | null
+          stage_log_id?: string | null
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      questionnaire_questions: {
+        Row: Record<string, unknown> & {
+          id: string
+          template_id: string
+          question_text: string
+          question_type: string
+          options: Json | null
+          is_required: boolean
+          sort_order: number
+          created_at: string
+        }
+        Insert: {
+          template_id: string
+          question_text: string
+          question_type?: string
+          options?: Json | null
+          is_required?: boolean
+          sort_order?: number
+        }
+        Update: {
+          question_text?: string
+          question_type?: string
+          options?: Json | null
+          is_required?: boolean
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      questionnaire_submissions: {
+        Row: Record<string, unknown> & {
+          id: string
+          template_id: string
+          member_id: string
+          stage_log_id: string | null
+          submitted_at: string
+        }
+        Insert: {
+          template_id: string
+          member_id: string
+          stage_log_id?: string | null
+        }
+        Update: {
+          stage_log_id?: string | null
+        }
+        Relationships: []
+      }
+      questionnaire_answers: {
+        Row: Record<string, unknown> & {
+          id: string
+          submission_id: string
+          question_id: string
+          answer_text: string | null
+          answer_rating: number | null
+          answer_choice: string | null
+          answer_yesno: boolean | null
+          created_at: string
+        }
+        Insert: {
+          submission_id: string
+          question_id: string
+          answer_text?: string | null
+          answer_rating?: number | null
+          answer_choice?: string | null
+          answer_yesno?: boolean | null
+        }
+        Update: {
+          answer_text?: string | null
+          answer_rating?: number | null
+          answer_choice?: string | null
+          answer_yesno?: boolean | null
+        }
+        Relationships: []
+      }
+      journal_entries: {
+        Row: Record<string, unknown> & {
+          id: string
+          member_id: string
+          stage_log_id: string | null
+          title: string | null
+          content: string
+          entry_type: string
+          image_url: string | null
+          is_private: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          member_id: string
+          stage_log_id?: string | null
+          title?: string | null
+          content: string
+          entry_type?: string
+          image_url?: string | null
+          is_private?: boolean
+        }
+        Update: {
+          stage_log_id?: string | null
+          title?: string | null
+          content?: string
+          entry_type?: string
+          image_url?: string | null
+          is_private?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      book_exports: {
+        Row: Record<string, unknown> & {
+          id: string
+          member_id: string
+          file_url: string | null
+          status: string
+          created_at: string
+        }
+        Insert: {
+          member_id: string
+          file_url?: string | null
+          status?: string
+        }
+        Update: {
+          file_url?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      automation_logs: {
+        Row: Record<string, unknown> & {
+          id: string
+          trigger_type: string
+          member_id: string | null
+          stage_log_id: string | null
+          payload: Json
+          status: string
+          created_at: string
+        }
+        Insert: {
+          trigger_type: string
+          member_id?: string | null
+          stage_log_id?: string | null
+          payload?: Json
+          status?: string
+        }
+        Update: {
+          status?: string
         }
         Relationships: []
       }
