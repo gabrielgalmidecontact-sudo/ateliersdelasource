@@ -1,56 +1,57 @@
 'use client'
-// src/features/auth/MemberDashboard.tsx — version connectée Supabase
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
+// src/features/auth/MemberDashboard.tsx — "Mon chemin"
+// Dashboard membre transformé en outil de parcours personnel
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { User, Calendar, Bell, FileText, LogOut, Lock, ChevronRight } from 'lucide-react'
+import Link from 'next/link'
+import { Bell, User, ChevronRight, Calendar } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthContext'
 import { Container } from '@/components/ui/Container'
 import { Button } from '@/components/ui/Button'
-
-const menuItems = [
-  {
-    icon: <User size={22} />,
-    label: 'Mon profil',
-    href: '/espace-membre/profil',
-    description: 'Informations personnelles, motivation',
-    color: '#5C3D2E',
-  },
-  {
-    icon: <FileText size={22} />,
-    label: 'Mon parcours',
-    href: '/espace-membre/suivi',
-    description: 'Fiches de suivi, journal de stages',
-    color: '#4A5E3A',
-  },
-  {
-    icon: <Calendar size={22} />,
-    label: 'Mes réservations',
-    href: '/espace-membre/reservations',
-    description: 'Stages inscrits et historique',
-    color: '#C8912A',
-  },
-  {
-    icon: <Bell size={22} />,
-    label: 'Newsletter',
-    href: '/espace-membre/newsletter',
-    description: 'Préférences de communication',
-    color: '#5C3D2E',
-  },
-]
+import { MemberHero } from '@/features/member/MemberHero'
+import { MemberStats } from '@/features/member/MemberStats'
+import { MemberTimeline } from '@/features/member/MemberTimeline'
+import type { StageLog } from '@/lib/supabase/types'
 
 export function MemberDashboard() {
   const { user, profile, isLoading, signOut } = useAuth()
   const router = useRouter()
-  const [visible, setVisible] = useState(true)
-
-  useEffect(() => { setVisible(true) }, [])
+  const [stages, setStages] = useState<StageLog[]>([])
+  const [journalCount, setJournalCount] = useState(0)
+  const [notesCount, setNotesCount] = useState(0)
+  const [dataLoading, setDataLoading] = useState(true)
 
   useEffect(() => {
-    if (!isLoading && !user) {
-      router.push('/connexion')
-    }
+    if (!isLoading && !user) router.push('/connexion')
   }, [user, isLoading, router])
+
+  const loadData = useCallback(async () => {
+    if (!user) return
+    try {
+      const [stagesRes, journalRes] = await Promise.all([
+        fetch('/api/member/stages', { headers: { Authorization: `Bearer ${user.accessToken}` } }),
+        fetch('/api/member/journal', { headers: { Authorization: `Bearer ${user.accessToken}` } }),
+      ])
+      if (stagesRes.ok) {
+        const { stages: data } = await stagesRes.json()
+        const list: StageLog[] = data || []
+        setStages(list)
+        // Compter les notes liées aux stages
+        const total = list.reduce((acc: number, s: StageLog & { member_notes?: unknown[] }) => {
+          return acc + ((s as StageLog & { member_notes?: unknown[] }).member_notes?.length || 0)
+        }, 0)
+        setNotesCount(total)
+      }
+      if (journalRes.ok) {
+        const { notes } = await journalRes.json()
+        setJournalCount((notes || []).length)
+      }
+    } finally {
+      setDataLoading(false)
+    }
+  }, [user])
+
+  useEffect(() => { if (user) loadData() }, [user, loadData])
 
   const handleSignOut = async () => {
     await signOut()
@@ -66,87 +67,130 @@ export function MemberDashboard() {
   }
 
   const firstName = profile?.first_name || user.email.split('@')[0]
+  const lastActivity = stages.length > 0
+    ? [...stages].sort((a, b) => new Date(b.stage_date).getTime() - new Date(a.stage_date).getTime())[0]?.stage_date || null
+    : null
 
   return (
     <>
-      <div className="pt-32 pb-16 bg-[#5C3D2E]">
+      {/* Hero */}
+      <MemberHero
+        firstName={firstName}
+        email={user.email}
+        profile={profile}
+        stagesCount={stages.length}
+        notesCount={notesCount + journalCount}
+        lastActivity={lastActivity}
+        onSignOut={handleSignOut}
+      />
+
+      <div className="bg-[#FAF6EF] py-12">
         <Container>
-          <div
-            className="flex items-end justify-between flex-wrap gap-4"
-            style={{ opacity: visible ? 1 : 0, transform: visible ? 'none' : 'translateY(20px)', transition: 'opacity 0.5s ease, transform 0.5s ease' }}
-          >
-            <div>
-              <p className="text-xs font-sans tracking-widest uppercase text-[#C8912A] mb-2">Espace membre</p>
-              <h1 className="font-serif text-4xl text-[#F5EDD8]">Bonjour, {firstName} 👋</h1>
-              <p className="text-sm font-sans text-[#C8A888] mt-2">{user.email}</p>
-            </div>
-            <button
-              onClick={handleSignOut}
-              className="flex items-center gap-2 text-sm font-sans text-[#C8A888] hover:text-white transition-colors"
-            >
-              <LogOut size={16} />
-              Se déconnecter
-            </button>
-          </div>
-        </Container>
-      </div>
 
-      <div className="bg-[#FAF6EF] py-16">
-        <Container size="md">
-
-          {/* Compléter le profil si vide */}
+          {/* Compléter profil */}
           {!profile?.first_name && (
-            <div
-              className="mb-8 p-5 bg-[#FFF8E8] border border-[#E0B060] rounded-sm flex items-start gap-3"
-              style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.6s ease 100ms' }}
-            >
-              <Lock size={18} className="text-[#C8912A] flex-shrink-0 mt-0.5" />
+            <div className="mb-8 p-5 bg-[#FFF8E8] border border-[#E0B060] rounded-sm flex items-start gap-3">
+              <User size={18} className="text-[#C8912A] flex-shrink-0 mt-0.5" aria-hidden="true" />
               <div>
-                <p className="font-sans font-medium text-[#5C3D2E] text-sm mb-1">
-                  Complétez votre profil
-                </p>
+                <p className="font-sans font-medium text-[#5C3D2E] text-sm mb-1">Personnalisez votre espace</p>
                 <p className="text-xs font-sans text-[#7A6355]">
-                  Ajoutez votre prénom et quelques infos pour personnaliser votre espace.
+                  Ajoutez votre prénom et votre motivation pour un suivi plus humain.
                 </p>
                 <Link href="/espace-membre/profil" className="mt-2 inline-block text-xs font-sans text-[#C8912A] font-medium hover:underline">
-                  Compléter →
+                  Compléter mon profil →
                 </Link>
               </div>
             </div>
           )}
 
-          {/* Menu cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {menuItems.map((item, i) => (
-              <div
-                key={item.href}
-                style={{ opacity: visible ? 1 : 0, transform: visible ? 'none' : 'translateY(20px)', transition: `opacity 0.5s ease ${i * 70}ms, transform 0.5s ease ${i * 70}ms` }}
-              >
-                <Link
-                  href={item.href}
-                  className="group flex items-center gap-5 p-6 bg-white rounded-sm border border-[#D4C4A8] hover:border-[#C8912A]/60 hover:shadow-md transition-all duration-200"
-                >
-                  <div
-                    className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover:scale-110"
-                    style={{ backgroundColor: item.color + '15', color: item.color }}
-                  >
-                    {item.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h2 className="font-serif text-lg text-[#5C3D2E] group-hover:text-[#C8912A] transition-colors">{item.label}</h2>
-                    <p className="text-xs font-sans text-[#7A6355] mt-0.5">{item.description}</p>
-                  </div>
-                  <ChevronRight size={18} className="text-[#D4C4A8] group-hover:text-[#C8912A] transition-colors flex-shrink-0" />
-                </Link>
-              </div>
-            ))}
-          </div>
+          {dataLoading ? (
+            <div className="flex justify-center py-16">
+              <div className="w-8 h-8 border-2 border-[#C8912A] border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
+            <>
+              {/* Stats */}
+              <section aria-labelledby="stats-heading" className="mb-12">
+                <h2 id="stats-heading" className="sr-only">Résumé de votre évolution</h2>
+                <MemberStats stages={stages} notesCount={notesCount} journalCount={journalCount} />
+              </section>
 
-          <div className="mt-10 text-center">
-            <Button href="/evenements" variant="outline" size="md">
-              Voir les prochains stages
-            </Button>
-          </div>
+              {/* Timeline */}
+              <section aria-labelledby="timeline-heading" className="mb-12">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 id="timeline-heading" className="font-serif text-2xl text-[#5C3D2E]">
+                    Mon parcours
+                  </h2>
+                  {stages.length > 0 && (
+                    <Link
+                      href="/espace-membre/suivi"
+                      className="text-sm font-sans text-[#C8912A] hover:text-[#5C3D2E] transition-colors flex items-center gap-1"
+                    >
+                      Tout voir <ChevronRight size={14} />
+                    </Link>
+                  )}
+                </div>
+                <MemberTimeline stages={stages.slice(0, 5)} />
+              </section>
+
+              {/* Accès rapide */}
+              <section aria-labelledby="quick-access-heading">
+                <h2 id="quick-access-heading" className="font-serif text-xl text-[#5C3D2E] mb-4">
+                  Accès rapide
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <Link
+                    href="/espace-membre/journal"
+                    className="group flex items-center gap-4 p-4 bg-white rounded-sm border border-[#D4C4A8] hover:border-[#C8912A]/50 hover:shadow-sm transition-all duration-200"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-[#F5EDD8] group-hover:bg-[#FFF8E8] flex items-center justify-center flex-shrink-0 transition-colors">
+                      <span className="text-[#C8912A] text-base">✦</span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-sans font-medium text-sm text-[#5C3D2E] group-hover:text-[#C8912A] transition-colors">Journal</p>
+                      <p className="text-xs font-sans text-[#7A6355] mt-0.5">Notes libres</p>
+                    </div>
+                    <ChevronRight size={16} className="text-[#D4C4A8] group-hover:text-[#C8912A] ml-auto flex-shrink-0 transition-colors" />
+                  </Link>
+
+                  <Link
+                    href="/espace-membre/reservations"
+                    className="group flex items-center gap-4 p-4 bg-white rounded-sm border border-[#D4C4A8] hover:border-[#C8912A]/50 hover:shadow-sm transition-all duration-200"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-[#FFF8E8] flex items-center justify-center flex-shrink-0">
+                      <Calendar size={18} className="text-[#C8912A]" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-sans font-medium text-sm text-[#5C3D2E] group-hover:text-[#C8912A] transition-colors">Réservations</p>
+                      <p className="text-xs font-sans text-[#7A6355] mt-0.5">Stages inscrits</p>
+                    </div>
+                    <ChevronRight size={16} className="text-[#D4C4A8] group-hover:text-[#C8912A] ml-auto flex-shrink-0 transition-colors" />
+                  </Link>
+
+                  <Link
+                    href="/espace-membre/newsletter"
+                    className="group flex items-center gap-4 p-4 bg-white rounded-sm border border-[#D4C4A8] hover:border-[#C8912A]/50 hover:shadow-sm transition-all duration-200"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-[#F0F5EC] flex items-center justify-center flex-shrink-0">
+                      <Bell size={18} className="text-[#4A5E3A]" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-sans font-medium text-sm text-[#5C3D2E] group-hover:text-[#C8912A] transition-colors">Newsletter</p>
+                      <p className="text-xs font-sans text-[#7A6355] mt-0.5">Préférences</p>
+                    </div>
+                    <ChevronRight size={16} className="text-[#D4C4A8] group-hover:text-[#C8912A] ml-auto flex-shrink-0 transition-colors" />
+                  </Link>
+                </div>
+              </section>
+
+              {/* CTA découverte */}
+              <div className="mt-10 text-center">
+                <Button href="/evenements" variant="outline" size="md">
+                  Voir les prochains stages
+                </Button>
+              </div>
+            </>
+          )}
         </Container>
       </div>
     </>

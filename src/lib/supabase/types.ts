@@ -82,6 +82,14 @@ export interface Reservation {
   created_at: string
 }
 
+// ─── Journal libre (hors stage) ───────────────────────────────
+export interface GlobalNote {
+  id: string
+  user_id: string
+  content: string
+  created_at: string
+}
+
 // ─── Helpers ──────────────────────────────────────────────────
 export type ProfileWithStats = Profile & {
   stages_count: number
@@ -286,6 +294,22 @@ export interface Database {
           amount_cents?: number | null
           stripe_session_id?: string | null
           notes?: string | null
+        }
+        Relationships: []
+      }
+      member_global_notes: {
+        Row: Record<string, unknown> & {
+          id: string
+          user_id: string
+          content: string
+          created_at: string
+        }
+        Insert: {
+          user_id: string
+          content: string
+        }
+        Update: {
+          content?: string
         }
         Relationships: []
       }

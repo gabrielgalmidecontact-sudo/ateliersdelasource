@@ -20,10 +20,11 @@ type FullMemberData = {
 }
 
 const CATEGORY_OPTIONS = [
-  { value: 'observation', label: 'Observation' },
+  { value: 'observation',   label: 'Observation' },
   { value: 'encouragement', label: 'Encouragement' },
-  { value: 'recommendation', label: 'Recommandation' },
-  { value: 'general', label: 'Note générale' },
+  { value: 'piste',         label: 'Piste à explorer' },
+  { value: 'recommendation',label: 'Recommandation' },
+  { value: 'general',       label: 'Note générale' },
 ]
 
 const STATUS_COLORS: Record<string, string> = {
@@ -148,10 +149,10 @@ export function AdminMemberDetailPage({ memberId }: { memberId: string }) {
   const initials = [(profile.first_name || '?')[0], (profile.last_name || '')[0]].filter(Boolean).join('').toUpperCase()
 
   const TABS = [
-    { id: 'suivi', label: 'Suivi stages', count: stages.length },
-    { id: 'notes', label: 'Mes notes', count: trainerNotes.length },
-    { id: 'reservations', label: 'Réservations', count: reservations.length },
-    { id: 'profil', label: 'Profil', count: null },
+    { id: 'suivi',        label: 'Parcours',            count: stages.length },
+    { id: 'notes',        label: 'Mes guidances',        count: trainerNotes.length },
+    { id: 'reservations', label: 'Réservations',         count: reservations.length },
+    { id: 'profil',       label: 'Profil',               count: null },
   ] as const
 
   return (
@@ -245,7 +246,7 @@ export function AdminMemberDetailPage({ memberId }: { memberId: string }) {
             {activeTab === 'suivi' && (
               <div className="space-y-4">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="font-serif text-xl text-[#5C3D2E]">Fiches de suivi</h2>
+                  <h2 className="font-serif text-xl text-[#5C3D2E]">Parcours de {profile.first_name || 'ce membre'}</h2>
                   <Button size="sm" variant="primary" onClick={() => setStageModal(true)}>
                     <Plus size={14} /> Ajouter un stage
                   </Button>
@@ -322,19 +323,19 @@ export function AdminMemberDetailPage({ memberId }: { memberId: string }) {
             {activeTab === 'notes' && (
               <div className="space-y-4">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="font-serif text-xl text-[#5C3D2E]">Mes notes sur ce membre</h2>
+                  <h2 className="font-serif text-xl text-[#5C3D2E]">Mes guidances</h2>
                   <Button size="sm" variant="primary" onClick={() => setAddingNote(v => !v)}>
-                    <Plus size={14} /> Ajouter une note
+                    <Plus size={14} /> Ajouter une guidance
                   </Button>
                 </div>
 
                 {/* Formulaire nouvelle note */}
                 {addingNote && (
                   <div className="bg-white rounded-sm border border-[#C8912A]/30 p-5 space-y-3">
-                    <h3 className="font-serif text-lg text-[#5C3D2E]">Nouvelle note</h3>
+                    <h3 className="font-serif text-lg text-[#5C3D2E]">Nouvelle guidance</h3>
                     <textarea
                       className="w-full text-sm font-sans border border-[#D4C4A8] rounded-sm p-3 resize-y min-h-[100px] focus:outline-none focus:border-[#C8912A]"
-                      placeholder="Note d'observation, encouragement, recommandation…"
+                      placeholder="Observation, encouragement, piste à explorer…"
                       value={newNote.content}
                       onChange={e => setNewNote(p => ({ ...p, content: e.target.value }))}
                     />
@@ -379,7 +380,7 @@ export function AdminMemberDetailPage({ memberId }: { memberId: string }) {
                 {trainerNotes.length === 0 && !addingNote ? (
                   <div className="bg-white rounded-sm border border-[#D4C4A8] p-10 text-center">
                     <BookOpen size={32} className="text-[#D4C4A8] mx-auto mb-3" />
-                    <p className="font-serif text-lg text-[#7A6355]">Aucune note pour le moment</p>
+                    <p className="font-serif text-lg text-[#7A6355]">Aucune guidance pour le moment</p>
                   </div>
                 ) : trainerNotes.map(note => (
                   <div key={note.id} className="bg-white rounded-sm border border-[#D4C4A8] p-5">

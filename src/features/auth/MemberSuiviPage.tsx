@@ -4,7 +4,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Plus, ChevronDown, ChevronUp, Star, BookOpen, MessageSquare, Eye, EyeOff, Save } from 'lucide-react'
+import { ArrowLeft, Plus, ChevronDown, ChevronUp, Star, BookOpen, MessageSquare, Eye, EyeOff, Save, Lightbulb, Feather } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthContext'
 import { Container } from '@/components/ui/Container'
 import { Button } from '@/components/ui/Button'
@@ -123,7 +123,7 @@ function StageCard({ stage, token, onUpdate }: { stage: StageWithNotes; token: s
           {/* Intention avant le stage */}
           <div>
             <h4 className="text-xs font-sans uppercase tracking-widest text-[#C8912A] mb-2 flex items-center gap-2">
-              <BookOpen size={13} /> Mon intention avant ce stage
+              <BookOpen size={13} /> Avant — Mon intention
             </h4>
             {editing === 'intention_before' ? (
               <div className="space-y-2">
@@ -155,7 +155,7 @@ function StageCard({ stage, token, onUpdate }: { stage: StageWithNotes; token: s
           {(stage.status === 'completed' || stage.reflection_after) && (
             <div>
               <h4 className="text-xs font-sans uppercase tracking-widest text-[#4A5E3A] mb-2 flex items-center gap-2">
-                <MessageSquare size={13} /> Réflexion après le stage
+                <MessageSquare size={13} /> Après — Réflexion
               </h4>
               {editing === 'reflection_after' ? (
                 <div className="space-y-2">
@@ -207,9 +207,12 @@ function StageCard({ stage, token, onUpdate }: { stage: StageWithNotes; token: s
                     : <p className="text-sm font-sans text-[#7A6355] italic">Cliquez pour ajouter votre réflexion après le stage…</p>
                   }
                   {stage.key_insight && (
-                    <div className="mt-2 p-3 bg-[#F5EDD8] rounded-sm border-l-4 border-[#C8912A]">
-                      <p className="text-xs font-sans uppercase text-[#C8912A] mb-1">Prise de conscience</p>
-                      <p className="text-sm font-sans text-[#5C3D2E] italic">« {stage.key_insight} »</p>
+                    <div className="mt-3 p-4 bg-[#FFF8E8] rounded-sm border border-[#E0B060] flex items-start gap-3">
+                      <Lightbulb size={16} className="text-[#C8912A] flex-shrink-0 mt-0.5" aria-hidden="true" />
+                      <div>
+                        <p className="text-[10px] font-sans uppercase tracking-widest text-[#C8912A] mb-1">Insight clé</p>
+                        <p className="text-sm font-sans text-[#5C3D2E] italic leading-relaxed">« {stage.key_insight} »</p>
+                      </div>
                     </div>
                   )}
                   <span className="text-xs text-[#C8912A] opacity-0 group-hover:opacity-100 transition-opacity">✏️ Modifier</span>
@@ -332,13 +335,13 @@ export function MemberSuiviPage() {
 
   return (
     <>
-      <div className="pt-32 pb-12 bg-[#5C3D2E]">
+      <div className="pt-32 pb-12 bg-[#3B2315]">
         <Container>
-          <Link href="/espace-membre" className="text-[#C8A888] hover:text-[#F5EDD8] transition-colors text-sm font-sans flex items-center gap-1 mb-3">
-            <ArrowLeft size={14} /> Espace membre
+          <Link href="/espace-membre" className="text-[#C8A888] hover:text-[#F5EDD8] transition-colors text-sm font-sans flex items-center gap-1 mb-4">
+            <ArrowLeft size={14} /> Mon chemin
           </Link>
-          <h1 className="font-serif text-3xl text-[#F5EDD8]">Mon parcours</h1>
-          <p className="text-sm font-sans text-[#C8A888] mt-1">Fiches de suivi · Notes · Réflexions</p>
+          <h1 className="font-serif text-3xl text-[#F5EDD8]">Mes expériences</h1>
+          <p className="text-sm font-sans text-[#C8A888] mt-1">Fiches de suivi · Réflexions · Prises de conscience</p>
         </Container>
       </div>
 
@@ -364,8 +367,14 @@ export function MemberSuiviPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between mb-6">
                   <p className="text-sm font-sans text-[#7A6355]">
-                    {stages.length} fiche{stages.length > 1 ? 's' : ''} de suivi
+                    {stages.length} expérience{stages.length > 1 ? 's' : ''}
                   </p>
+                  <Link
+                    href="/espace-membre/journal"
+                    className="flex items-center gap-1.5 text-xs font-sans text-[#C8912A] hover:text-[#5C3D2E] transition-colors"
+                  >
+                    <Feather size={12} /> Journal libre
+                  </Link>
                 </div>
                 {stages.map(stage => (
                   <StageCard
