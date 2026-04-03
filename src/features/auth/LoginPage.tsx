@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Eye, EyeOff, ArrowRight } from 'lucide-react'
+import { useAuth } from '@/lib/auth/AuthContext'
 import { Container } from '@/components/ui/Container'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
@@ -11,7 +12,9 @@ import { Button } from '@/components/ui/Button'
 type LoginStatus = 'idle' | 'loading' | 'error'
 
 export function LoginPage() {
+  const router = useRouter()
   const searchParams = useSearchParams()
+  const { signIn, user, isAdmin, isLoading } = useAuth()
 
   const [form, setForm] = useState({
     email: '',
@@ -20,6 +23,20 @@ export function LoginPage() {
   const [showPass, setShowPass] = useState(false)
   const [status, setStatus] = useState<LoginStatus>('idle')
   const [error, setError] = useState('')
+  const [visible, setVisible] = useState(true)
+
+  useEffect(() => {
+    setVisible(true)
+  }, [])
+
+  useEffect(() => {
+    if (isLoading || !user) return
+
+    const callbackUrl = searchParams.get('callbackUrl')
+    const target = isAdmin ? '/admin' : callbackUrl || '/espace-membre'
+
+    router.replace(target)
+  }, [isLoading, user, isAdmin, router, searchParams])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -29,40 +46,15 @@ export function LoginPage() {
     setError('')
     setStatus('loading')
 
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({
-          email: form.email.trim(),
-          password: form.password,
-        }),
-      })
+    const result = await signIn(form.email.trim(), form.password)
 
-      const data = await res.json().catch(() => ({}))
-
-      if (!res.ok) {
-        throw new Error(data?.error || 'Email ou mot de passe incorrect')
-      }
-
-      const target =
-        data?.user?.role === 'admin'
-          ? '/admin'
-          : searchParams.get('callbackUrl') || '/espace-membre'
-
-      window.location.href = target
-      return
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message)
-      } else {
-        setError('Erreur de connexion')
-      }
+    if (result.error) {
+      setError(result.error)
       setStatus('error')
-    } finally {
-      setStatus('idle')
+      return
     }
+
+    setStatus('idle')
   }
 
   return (
@@ -79,7 +71,14 @@ export function LoginPage() {
       </div>
 
       <div className="flex-1 flex items-center justify-center px-4 py-16">
-        <div className="w-full max-w-md">
+        <div
+          className="w-full max-w-md"
+          style={{
+            opacity: visible ? 1 : 0,
+            transform: visible ? 'none' : 'translateY(20px)',
+            transition: 'opacity 0.5s ease, transform 0.5s ease',
+          }}
+        >
           <div className="bg-white rounded-sm border border-[#D4C4A8] p-8 shadow-sm">
             <div className="text-center mb-8">
               <p className="text-xs font-sans tracking-widest uppercase text-[#C8912A] mb-2">
@@ -140,10 +139,10 @@ export function LoginPage() {
                 type="submit"
                 variant="primary"
                 size="md"
-                disabled={status === 'loading'}
+                disabled={status === 'loading' || isLoading}
                 className="w-full"
               >
-                {status === 'loading' ? (
+                {status === 'loading' || isLoading ? (
                   'Connexion…'
                 ) : (
                   <>
