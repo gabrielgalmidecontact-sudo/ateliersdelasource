@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, CheckCircle, Circle, Award } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthContext'
 import { Container } from '@/components/ui/Container'
+import { BeginnerMode } from '@/features/member/BeginnerMode'
 import type { MemberCompetency, Competency } from '@/lib/supabase/types'
 
 type MemberCompetencyWithComp = MemberCompetency & { competency?: Competency }
@@ -117,11 +118,14 @@ export function MemberCompetenciesPage() {
               <ArrowLeft size={18} />
             </Link>
           </div>
-          <p className="text-[10px] font-sans tracking-[0.2em] uppercase text-[#C8912A] mb-1">Espace personnel</p>
-          <h1 className="font-serif text-3xl text-[#F5EDD8]">Mes compétences</h1>
-          <p className="text-sm font-sans text-[#C8A888] mt-1">
-            Suivies et validées par Gabriel
-          </p>
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-[10px] font-sans tracking-[0.2em] uppercase text-[#C8912A] mb-1">Espace personnel</p>
+              <h1 className="font-serif text-3xl text-[#F5EDD8]">Mes compétences</h1>
+              <p className="text-sm font-sans text-[#C8A888] mt-1">Suivies et validées par Gabriel</p>
+            </div>
+            <BeginnerMode context="member-competences" />
+          </div>
         </Container>
       </div>
 

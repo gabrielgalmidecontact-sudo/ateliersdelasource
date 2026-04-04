@@ -1,6 +1,6 @@
 'use client'
 // src/features/admin/AdminBeginnerMode.tsx
-// Mode débutant admin — guide Gabriel dans son espace d'accompagnement
+// Mode débutant admin — guide Gabriel dans son espace d'accompagnement (Phase 2 étendu)
 
 import { useState } from 'react'
 import { HelpCircle, X, ChevronDown, ChevronUp } from 'lucide-react'
@@ -16,6 +16,31 @@ const ADMIN_HELP: { title: string; intro: string; sections: { heading: string; i
   intro: 'Votre tableau de bord centralise tous les outils pour suivre vos membres, piloter vos contenus et développer Les Ateliers de la Source.',
   sections: [
     {
+      heading: 'Expériences — nouveauté Phase 2',
+      items: [
+        {
+          icon: '🎭',
+          title: 'Créer une expérience',
+          description: 'Allez dans Admin → Expériences → "Nouvelle expérience". Renseignez le titre, le type (stage, atelier, formation…), les dates et le formateur. Une expérience peut accueillir plusieurs membres.',
+        },
+        {
+          icon: '👤',
+          title: 'Assigner un membre à une expérience',
+          description: 'Sur la fiche d\'un membre (onglet Parcours), cliquez "Ajouter une expérience" ou utilisez l\'API /api/admin/experiences/[id] avec POST {member_id}. Le membre verra l\'expérience dans sa timeline.',
+        },
+        {
+          icon: '🔗',
+          title: 'Lier un questionnaire à une expérience',
+          description: 'Dans Admin → Questionnaires, lors de la création, vous pouvez choisir le type de déclenchement : avant, après, bilan. Le membre reçoit le questionnaire au bon moment.',
+        },
+        {
+          icon: '🌱',
+          title: 'Compétences liées',
+          description: 'Après une expérience, attribuez des compétences au membre depuis sa fiche (onglet Compétences). Un snapshot est automatiquement enregistré pour tracer la progression.',
+        },
+      ],
+    },
+    {
       heading: 'Suivi des membres',
       items: [
         {
@@ -25,8 +50,8 @@ const ADMIN_HELP: { title: string; intro: string; sections: { heading: string; i
         },
         {
           icon: '📝',
-          title: 'Ajouter une expérience',
-          description: 'Sur la fiche d\'un membre, onglet "Parcours", cliquez "Ajouter une fiche de suivi". Renseignez le titre, la date et le statut du stage.',
+          title: 'Ajouter une fiche de suivi (legacy)',
+          description: 'Sur la fiche d\'un membre, onglet "Parcours", cliquez "Ajouter une fiche de suivi". Renseignez le titre, la date et le statut. Compatible avec l\'ancien système.',
         },
         {
           icon: '💬',
@@ -37,6 +62,51 @@ const ADMIN_HELP: { title: string; intro: string; sections: { heading: string; i
           icon: '👁️',
           title: 'Visibilité des guidances',
           description: 'Lors de l\'ajout d\'une guidance, cochez "Visible par le membre" pour qu\'elle apparaisse dans son espace personnel. Sinon, elle reste privée pour vous.',
+        },
+        {
+          icon: '✏️',
+          title: 'Modifier le statut d\'une expérience',
+          description: 'Sur la fiche membre, dans l\'onglet Parcours, cliquez directement sur le badge de statut (À venir / Effectué / Annulé) pour le modifier en ligne.',
+        },
+      ],
+    },
+    {
+      heading: 'Questionnaires',
+      items: [
+        {
+          icon: '📋',
+          title: 'Créer un questionnaire',
+          description: 'Admin → Questionnaires → "Nouveau questionnaire". Donnez-lui un titre, une description optionnelle, et ajoutez vos questions (texte libre, note, choix multiple, oui/non).',
+        },
+        {
+          icon: '📊',
+          title: 'Voir les réponses',
+          description: 'Sur la page des questionnaires, cliquez "Réponses" à côté d\'un questionnaire pour voir toutes les soumissions des membres, avec les réponses détaillées.',
+        },
+        {
+          icon: '🔀',
+          title: 'Types de questions',
+          description: 'Texte libre : réponse ouverte. Note : curseur 1-10. Choix multiple : options prédéfinies. Oui/Non : réponse binaire. Combinez-les pour un questionnaire riche.',
+        },
+      ],
+    },
+    {
+      heading: 'Compétences',
+      items: [
+        {
+          icon: '🌟',
+          title: 'Référentiel de compétences',
+          description: 'Admin → Compétences. Créez votre référentiel : chaque compétence a un nom, une catégorie et un icône emoji. C\'est votre vocabulaire pédagogique.',
+        },
+        {
+          icon: '📈',
+          title: 'Attribuer et valider',
+          description: 'Sur la fiche d\'un membre, onglet "Compétences" : attribuez un niveau (0-100%) et cochez "Validé" pour officialiser. Le membre le voit dans son espace.',
+        },
+        {
+          icon: '📉',
+          title: 'Historique de progression',
+          description: 'Chaque modification de niveau crée un snapshot automatique. Cela permet de visualiser la courbe de progression d\'un membre dans le temps.',
         },
       ],
     },
@@ -61,7 +131,7 @@ const ADMIN_HELP: { title: string; intro: string; sections: { heading: string; i
       ],
     },
     {
-      heading: 'Développement du site',
+      heading: 'Technique & déploiement',
       items: [
         {
           icon: '🚀',
@@ -69,14 +139,14 @@ const ADMIN_HELP: { title: string; intro: string; sections: { heading: string; i
           description: 'Toute modification de code poussée sur GitHub se déploie automatiquement sur Vercel (votre hébergeur). Le site se met à jour en 2–3 minutes.',
         },
         {
+          icon: '🔧',
+          title: 'Diagnostic Supabase',
+          description: 'Appelez GET /api/admin/diagnostic (avec votre token Bearer) pour vérifier quelles tables existent dans votre base de données. Utile après une migration.',
+        },
+        {
           icon: '📧',
           title: 'Emails automatiques',
           description: 'Des emails sont envoyés automatiquement lors d\'une inscription et à la création d\'un compte membre. Configurez l\'expéditeur via les variables d\'environnement Vercel.',
-        },
-        {
-          icon: '📊',
-          title: 'Évolutions prévues',
-          description: 'Prochainement : questionnaires personnalisés à rattacher aux stages, système de compétences validées, export PDF du livre de bord membre, automatisations avancées.',
         },
       ],
     },
@@ -166,7 +236,10 @@ export function AdminBeginnerMode() {
 
           <div className="px-4 py-3 bg-[#F5EDD8] border-t border-[#E8D8B8]">
             <p className="text-[11px] font-sans text-[#7A6355]">
-              Support technique : consultez le <a href="https://github.com/gabrielgalmidecontact-sudo/ateliersdelasource" target="_blank" rel="noopener noreferrer" className="text-[#C8912A] hover:underline">repository GitHub</a>.
+              Support technique : consultez le{' '}
+              <a href="https://github.com/gabrielgalmidecontact-sudo/ateliersdelasource" target="_blank" rel="noopener noreferrer" className="text-[#C8912A] hover:underline">
+                repository GitHub
+              </a>.
             </p>
           </div>
         </div>

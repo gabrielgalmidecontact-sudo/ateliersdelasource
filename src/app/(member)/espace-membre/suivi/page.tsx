@@ -1,8 +1,8 @@
 // src/app/(member)/espace-membre/suivi/page.tsx
 import type { Metadata } from 'next'
+import { MemberSuiviPageV2 } from '@/features/member/MemberSuiviPageV2'
 
 export const dynamic = 'force-dynamic'
-import { MemberSuiviPage } from '@/features/auth/MemberSuiviPage'
 
 export const metadata: Metadata = {
   title: 'Mon parcours — Espace membre',
@@ -10,5 +10,5 @@ export const metadata: Metadata = {
 }
 
 export default function Page() {
-  return <MemberSuiviPage />
+  return <MemberSuiviPageV2 />
 }

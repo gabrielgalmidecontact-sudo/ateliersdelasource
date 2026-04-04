@@ -97,6 +97,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     result = data
   }
 
+  // Phase 2 — créer un snapshot pour tracer la progression
+  try {
+    await supabase.from('competency_snapshots').insert({
+      member_id: memberId,
+      competency_id: body.competency_id,
+      value: body.level ?? 0,
+      source: 'admin',
+      note: body.notes || null,
+    })
+  } catch { /* table optionnelle — non bloquant */ }
+
   return NextResponse.json({ competency: result }, { status: 201 })
 }
 

@@ -140,12 +140,20 @@ export function AdminDashboard() {
       color: '#5C3D2E',
     },
     {
+      href: '/admin/experiences',
+      icon: <BookOpen size={20} />,
+      label: 'Expériences',
+      description: 'Stages, ateliers, formations',
+      badge: null,
+      color: '#C8912A',
+    },
+    {
       href: '/admin/questionnaires',
       icon: <FileText size={20} />,
       label: 'Questionnaires',
       description: 'Créer et gérer les questionnaires',
       badge: null,
-      color: '#C8912A',
+      color: '#7A6355',
     },
     {
       href: '/admin/competences',

@@ -12,10 +12,52 @@ interface HelpItem {
 }
 
 interface BeginnerModeProps {
-  context: 'member-dashboard' | 'member-journal' | 'member-suivi' | 'member-profil'
+  context: 'member-dashboard' | 'member-journal' | 'member-suivi' | 'member-profil' | 'member-competences' | 'member-questionnaires'
 }
 
 const HELP_CONTENT: Record<BeginnerModeProps['context'], { title: string; intro: string; items: HelpItem[] }> = {
+  'member-competences': {
+    title: 'Vos compétences',
+    intro: 'Vos compétences reflètent ce que vous avez développé et intégré au fil de vos expériences. Gabriel les attribue et les valide.',
+    items: [
+      {
+        icon: '🌱',
+        title: 'Ce que signifie une compétence',
+        description: 'Chaque compétence a un niveau de 0 à 100% et peut être "validée" officiellement par Gabriel. Une barre verte signifie validation officielle.',
+      },
+      {
+        icon: '📈',
+        title: 'Comment elles évoluent',
+        description: 'Gabriel ajuste votre niveau après chaque stage ou session. Vous ne pouvez pas les modifier vous-même — elles reflètent une évaluation réelle.',
+      },
+      {
+        icon: '🔍',
+        title: 'Les catégories',
+        description: 'Les compétences sont regroupées par catégories thématiques. Cela vous permet de voir dans quels domaines vous progressez le plus.',
+      },
+    ],
+  },
+  'member-questionnaires': {
+    title: 'Vos questionnaires',
+    intro: 'Les questionnaires vous permettent de réfléchir à vos expériences et d\'approfondir votre transformation personnelle.',
+    items: [
+      {
+        icon: '📋',
+        title: 'Répondre à un questionnaire',
+        description: 'Cliquez sur un questionnaire actif pour l\'ouvrir et répondre. Prenez le temps de réfléchir — il n\'y a pas de mauvaise réponse.',
+      },
+      {
+        icon: '💡',
+        title: 'À quoi ça sert',
+        description: 'Vos réponses aident Gabriel à mieux vous accompagner. Elles alimentent aussi votre parcours et enrichissent votre livre de bord.',
+      },
+      {
+        icon: '🔒',
+        title: 'Confidentialité',
+        description: 'Seul Gabriel peut voir vos réponses. Elles ne sont jamais partagées publiquement.',
+      },
+    ],
+  },
   'member-dashboard': {
     title: 'Bienvenue dans votre Livre de Bord',
     intro: 'Votre espace personnel centralise tout votre chemin de transformation. Voici comment le lire et le nourrir.',

@@ -6,7 +6,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   ArrowLeft, User, FileText, Calendar, BookOpen, Plus, Save,
-  Eye, EyeOff, Star, Lightbulb, CheckCircle, Circle, Award
+  Eye, EyeOff, Star, Lightbulb, CheckCircle, Circle, Award,
+  Edit2, Trash2
 } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthContext'
 import { Container } from '@/components/ui/Container'
@@ -16,7 +17,7 @@ import { Input } from '@/components/ui/Input'
 import { AdminBeginnerMode } from '@/features/admin/AdminBeginnerMode'
 import type {
   Profile, StageLog, TrainerNote, Reservation, MemberNote,
-  MemberCompetency, Competency, QuestionnaireSubmission
+  MemberCompetency, Competency, QuestionnaireSubmission, Experience
 } from '@/lib/supabase/types'
 
 type FullMemberData = {
@@ -99,7 +100,7 @@ export function AdminMemberDetailPage({ memberId }: { memberId: string }) {
   const [data, setData] = useState<FullMemberData | null>(null)
   const [allCompetencies, setAllCompetencies] = useState<Competency[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'suivi' | 'guidances' | 'competences' | 'questionnaires' | 'reservations' | 'profil'>('suivi')
+  const [activeTab, setActiveTab] = useState<'suivi' | 'experiences' | 'guidances' | 'competences' | 'questionnaires' | 'reservations' | 'profil'>('suivi')
   const [newNote, setNewNote] = useState({ content: '', category: 'general', visible: true, stageLogId: '' })
   const [addingNote, setAddingNote] = useState(false)
   const [savingNote, setSavingNote] = useState(false)
@@ -124,6 +125,24 @@ export function AdminMemberDetailPage({ memberId }: { memberId: string }) {
     notes: '',
   })
   const [savingComp, setSavingComp] = useState(false)
+
+  // Expériences
+  const [allExperiences, setAllExperiences] = useState<Experience[]>([])
+  const [memberAssignments, setMemberAssignments] = useState<Array<{ id: string; status: string; experience: Experience; created_at: string }>>([]) 
+  const [assignModal, setAssignModal] = useState(false)
+  const [assignExpId, setAssignExpId] = useState('')
+  const [assignStatus, setAssignStatus] = useState<'planned' | 'ongoing' | 'completed'>('planned')
+  const [savingAssign, setSavingAssign] = useState(false)
+
+  // Édition inline du statut d'un stage
+  const [editingStageId, setEditingStageId] = useState<string | null>(null)
+  const [stageStatusEdit, setStageStatusEdit] = useState<'upcoming' | 'completed' | 'cancelled'>('upcoming')
+  const [savingStageStatus, setSavingStageStatus] = useState(false)
+
+  // Édition inline d'une guidance
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
+  const [noteEditContent, setNoteEditContent] = useState('')
+  const [savingNoteEdit, setSavingNoteEdit] = useState(false)
 
   useEffect(() => { setVisiblePage(true) }, [])
 
@@ -162,6 +181,16 @@ export function AdminMemberDetailPage({ memberId }: { memberId: string }) {
     setLoading(false)
   }, [user, memberId])
 
+  const loadExperiences = useCallback(async () => {
+    if (!user) return
+    const [expRes, assignRes] = await Promise.all([
+      fetch('/api/admin/experiences', { headers: { Authorization: `Bearer ${user.accessToken}` } }),
+      fetch(`/api/admin/assign-experience?member_id=${memberId}`, { headers: { Authorization: `Bearer ${user.accessToken}` } }),
+    ])
+    if (expRes.ok) { const d = await expRes.json(); setAllExperiences(d.experiences || []) }
+    if (assignRes.ok) { const d = await assignRes.json(); setMemberAssignments(d.assignments || []) }
+  }, [user, memberId])
+
   const loadCompetencies = useCallback(async () => {
     if (!user) return
     const res = await fetch('/api/admin/competencies', {
@@ -177,8 +206,9 @@ export function AdminMemberDetailPage({ memberId }: { memberId: string }) {
     if (user && isAdmin) {
       loadMember()
       loadCompetencies()
+      loadExperiences()
     }
-  }, [user, isAdmin, loadMember, loadCompetencies])
+  }, [user, isAdmin, loadMember, loadCompetencies, loadExperiences])
 
   async function addTrainerNote() {
     if (!newNote.content || !user) return
@@ -242,6 +272,78 @@ export function AdminMemberDetailPage({ memberId }: { memberId: string }) {
     }
   }
 
+  // Mettre à jour le statut d'un stage inline
+  async function updateStageStatus(stageId: string, newStatus: 'upcoming' | 'completed' | 'cancelled') {
+    if (!user) return
+    setSavingStageStatus(true)
+    const res = await fetch(`/api/admin/members/${memberId}/add-stage`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.accessToken}` },
+      body: JSON.stringify({ stage_id: stageId, status: newStatus }),
+    })
+    setSavingStageStatus(false)
+    if (res.ok) {
+      setEditingStageId(null)
+      loadMember()
+    }
+  }
+
+  // Mettre à jour le contenu d'une guidance
+  async function updateGuidance(noteId: string) {
+    if (!user || !noteEditContent.trim()) return
+    setSavingNoteEdit(true)
+    const res = await fetch('/api/admin/trainer-notes', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.accessToken}` },
+      body: JSON.stringify({ id: noteId, content: noteEditContent }),
+    })
+    setSavingNoteEdit(false)
+    if (res.ok) {
+      setEditingNoteId(null)
+      setNoteEditContent('')
+      loadMember()
+    }
+  }
+
+  // Assigner une expérience
+  async function assignExperience() {
+    if (!user || !assignExpId) return
+    setSavingAssign(true)
+    const res = await fetch('/api/admin/assign-experience', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.accessToken}` },
+      body: JSON.stringify({ member_id: memberId, experience_id: assignExpId, status: assignStatus }),
+    })
+    setSavingAssign(false)
+    if (res.ok) {
+      setAssignModal(false)
+      setAssignExpId('')
+      loadExperiences()
+      loadMember()
+    }
+  }
+
+  // Retirer une assignation
+  async function removeAssignment(id: string) {
+    if (!user || !confirm('Retirer cette expérience du membre ?')) return
+    await fetch(`/api/admin/assign-experience?id=${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${user.accessToken}` },
+    })
+    loadExperiences()
+  }
+
+  // Supprimer une guidance
+  async function deleteGuidance(noteId: string) {
+    if (!user || !confirm('Supprimer cette guidance ?')) return
+    await fetch('/api/admin/trainer-notes', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.accessToken}` },
+      body: JSON.stringify({ id: noteId }),
+    })
+    loadMember()
+  }
+
   if (isLoading || !user || loading) return (
     <div className="min-h-screen bg-[#FAF6EF] flex items-center justify-center">
       <div className="w-8 h-8 border-2 border-[#C8912A] border-t-transparent rounded-full animate-spin" />
@@ -271,6 +373,7 @@ export function AdminMemberDetailPage({ memberId }: { memberId: string }) {
 
   const TABS = [
     { id: 'suivi',         label: 'Parcours',       count: stages.length },
+    { id: 'experiences',   label: 'Expériences',    count: memberAssignments.length },
     { id: 'guidances',     label: 'Guidances',      count: trainerNotes.length },
     { id: 'competences',   label: 'Compétences',    count: competencies.length },
     { id: 'questionnaires',label: 'Questionnaires', count: submissions.length },
@@ -398,12 +501,47 @@ export function AdminMemberDetailPage({ memberId }: { memberId: string }) {
                 ) : stages.map(stage => (
                   <div key={stage.id} className="bg-white rounded-sm border border-[#D4C4A8] p-5">
                     <div className="flex items-start justify-between gap-4 mb-3">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <h3 className="font-serif text-lg text-[#5C3D2E]">{stage.stage_title}</h3>
-                          <span className={`text-xs font-sans px-2 py-0.5 rounded-full ${STATUS_COLORS[stage.status]}`}>
-                            {STATUS_LABELS[stage.status] || stage.status}
-                          </span>
+                          {/* Badge statut cliquable */}
+                          {editingStageId === stage.id ? (
+                            <div className="flex items-center gap-2">
+                              <select
+                                value={stageStatusEdit}
+                                onChange={e => setStageStatusEdit(e.target.value as 'upcoming' | 'completed' | 'cancelled')}
+                                className="text-xs font-sans border border-[#C8912A] rounded-sm px-2 py-0.5 bg-[#FFF8E8] focus:outline-none"
+                              >
+                                <option value="upcoming">À venir</option>
+                                <option value="completed">Effectué</option>
+                                <option value="cancelled">Annulé</option>
+                              </select>
+                              <button
+                                onClick={() => updateStageStatus(stage.id, stageStatusEdit)}
+                                disabled={savingStageStatus}
+                                className="text-xs font-sans text-white bg-[#C8912A] px-2 py-0.5 rounded-sm hover:bg-[#B07820] transition-colors"
+                              >
+                                {savingStageStatus ? '…' : 'OK'}
+                              </button>
+                              <button
+                                onClick={() => setEditingStageId(null)}
+                                className="text-xs font-sans text-[#7A6355] px-2 py-0.5"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setEditingStageId(stage.id)
+                                setStageStatusEdit(stage.status as 'upcoming' | 'completed' | 'cancelled')
+                              }}
+                              className={`text-xs font-sans px-2 py-0.5 rounded-full cursor-pointer hover:opacity-80 transition-opacity ${STATUS_COLORS[stage.status]}`}
+                              title="Cliquer pour modifier le statut"
+                            >
+                              {STATUS_LABELS[stage.status] || stage.status}
+                            </button>
+                          )}
                         </div>
                         <p className="text-xs font-sans text-[#7A6355]">
                           {new Date(stage.stage_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
@@ -455,6 +593,80 @@ export function AdminMemberDetailPage({ memberId }: { memberId: string }) {
                     )}
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* ── Tab Expériences ── */}
+            {activeTab === 'experiences' && (
+              <div className="space-y-5">
+                <div className="flex justify-between items-center">
+                  <h2 className="font-serif text-xl text-[#5C3D2E]">Expériences de {profile.first_name || 'ce membre'}</h2>
+                  <Button size="sm" variant="primary" onClick={() => setAssignModal(true)}>
+                    <Plus size={14} /> Assigner une expérience
+                  </Button>
+                </div>
+
+                {memberAssignments.length === 0 ? (
+                  <div className="bg-white rounded-sm border border-[#D4C4A8] p-8 text-center">
+                    <BookOpen size={28} className="text-[#D4C4A8] mx-auto mb-3" />
+                    <p className="text-sm font-sans text-[#7A6355]">Aucune expérience assignée.</p>
+                    <p className="text-xs font-sans text-[#C8A888] mt-1">Utilisez le bouton ci-dessus pour assigner une expérience Phase 2 à ce membre.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {memberAssignments.map(a => {
+                      const exp = a.experience
+                      const statusColor = a.status === 'completed' ? '#4A5E3A' : a.status === 'ongoing' ? '#C8912A' : '#7A6355'
+                      const statusLabel = a.status === 'completed' ? 'Terminée' : a.status === 'ongoing' ? 'En cours' : 'Prévue'
+                      return (
+                        <div key={a.id} className="bg-white rounded-sm border border-[#E8D8B8] p-4 flex items-start gap-4">
+                          <div className="w-10 h-10 rounded-full bg-[#F5EDD8] flex items-center justify-center flex-shrink-0">
+                            <BookOpen size={16} className="text-[#5C3D2E]" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                              <h3 className="font-serif text-sm text-[#3B2315]">{exp?.title || '—'}</h3>
+                              <span className="text-[10px] font-sans px-2 py-0.5 rounded-full border" style={{ color: statusColor, borderColor: statusColor + '50' }}>
+                                {statusLabel}
+                              </span>
+                              {exp?.type && (
+                                <span className="text-[10px] font-sans text-[#C8A888] bg-[#F5EDD8] px-2 py-0.5 rounded-full">{exp.type}</span>
+                              )}
+                            </div>
+                            {exp?.description && (
+                              <p className="text-xs font-sans text-[#7A6355] leading-relaxed line-clamp-2">{exp.description}</p>
+                            )}
+                            {exp?.start_date && (
+                              <p className="text-[10px] font-sans text-[#C8A888] mt-1">
+                                {new Date(exp.start_date).toLocaleDateString('fr-FR')}{exp.end_date ? ` → ${new Date(exp.end_date).toLocaleDateString('fr-FR')}` : ''}
+                              </p>
+                            )}
+                            <p className="text-[10px] font-sans text-[#C8A888] mt-0.5">
+                              Assigné le {new Date(a.created_at).toLocaleDateString('fr-FR')}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => removeAssignment(a.id)}
+                            className="text-[#D4C4A8] hover:text-red-400 transition-colors flex-shrink-0 p-1"
+                            title="Retirer l'expérience"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* Lien vers la création d'expériences */}
+                <div className="text-center pt-4 border-t border-[#F0E8DA]">
+                  <Link
+                    href="/admin/experiences"
+                    className="text-xs font-sans text-[#C8912A] hover:text-[#5C3D2E] hover:underline transition-colors"
+                  >
+                    Gérer le catalogue d&apos;expériences →
+                  </Link>
+                </div>
               </div>
             )}
 
@@ -530,11 +742,55 @@ export function AdminMemberDetailPage({ memberId }: { memberId: string }) {
                           ? <span className="text-xs font-sans text-[#4A5E3A] flex items-center gap-1"><Eye size={11} /> Visible</span>
                           : <span className="text-xs font-sans text-[#7A6355] flex items-center gap-1"><EyeOff size={11} /> Privée</span>}
                       </div>
-                      <span className="text-xs font-sans text-[#7A6355] flex-shrink-0">
-                        {new Date(note.created_at).toLocaleDateString('fr-FR')}
-                      </span>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="text-xs font-sans text-[#7A6355]">
+                          {new Date(note.created_at).toLocaleDateString('fr-FR')}
+                        </span>
+                        <button
+                          onClick={() => {
+                            setEditingNoteId(note.id)
+                            setNoteEditContent(note.content)
+                          }}
+                          className="text-[#D4C4A8] hover:text-[#C8912A] transition-colors"
+                          title="Modifier"
+                        >
+                          <Edit2 size={13} />
+                        </button>
+                        <button
+                          onClick={() => deleteGuidance(note.id)}
+                          className="text-[#D4C4A8] hover:text-red-400 transition-colors"
+                          title="Supprimer"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
                     </div>
-                    <p className="text-sm font-sans text-[#2D1F14] leading-relaxed">{note.content}</p>
+                    {editingNoteId === note.id ? (
+                      <div className="space-y-2">
+                        <textarea
+                          value={noteEditContent}
+                          onChange={e => setNoteEditContent(e.target.value)}
+                          className="w-full text-sm font-sans border border-[#C8912A] rounded-sm p-3 resize-y min-h-[80px] focus:outline-none"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => updateGuidance(note.id)}
+                            disabled={savingNoteEdit}
+                            className="text-xs font-sans text-white bg-[#C8912A] px-3 py-1.5 rounded-sm hover:bg-[#B07820] transition-colors"
+                          >
+                            {savingNoteEdit ? 'Sauvegarde…' : 'Sauvegarder'}
+                          </button>
+                          <button
+                            onClick={() => setEditingNoteId(null)}
+                            className="text-xs font-sans text-[#7A6355] border border-[#D4C4A8] px-3 py-1.5 rounded-sm"
+                          >
+                            Annuler
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm font-sans text-[#2D1F14] leading-relaxed">{note.content}</p>
+                    )}
                   </div>
                 ))}
               </div>
@@ -780,6 +1036,51 @@ export function AdminMemberDetailPage({ memberId }: { memberId: string }) {
               {savingStage ? 'Enregistrement…' : 'Créer la fiche'}
             </Button>
             <Button variant="ghost" size="md" onClick={() => setStageModal(false)}>Annuler</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal : Assigner une expérience */}
+      <Modal isOpen={assignModal} onClose={() => setAssignModal(false)} title="Assigner une expérience" size="md">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-[#5C3D2E] mb-1.5">Expérience</label>
+            <select
+              value={assignExpId}
+              onChange={e => setAssignExpId(e.target.value)}
+              className="w-full px-4 py-3 text-sm font-sans border border-[#D4C4A8] rounded-sm bg-[#FAF6EF] focus:outline-none focus:border-[#C8912A] text-[#2D1F14]"
+            >
+              <option value="">— Choisir une expérience —</option>
+              {allExperiences.filter(e => !memberAssignments.some(a => a.experience?.id === e.id || (a as unknown as Record<string, unknown>).experience_id === e.id)).map(e => (
+                <option key={e.id} value={e.id}>{e.title} ({e.type})</option>
+              ))}
+            </select>
+            {allExperiences.length === 0 && (
+              <p className="text-xs font-sans text-[#7A6355] mt-1">
+                Aucune expérience créée.{' '}
+                <Link href="/admin/experiences" className="text-[#C8912A] hover:underline">Créer des expériences</Link>
+              </p>
+            )}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[#5C3D2E] mb-1.5">Statut</label>
+            <select
+              value={assignStatus}
+              onChange={e => setAssignStatus(e.target.value as 'planned' | 'ongoing' | 'completed')}
+              className="w-full px-4 py-3 text-sm font-sans border border-[#D4C4A8] rounded-sm bg-[#FAF6EF] focus:outline-none focus:border-[#C8912A] text-[#2D1F14]"
+            >
+              <option value="planned">Prévue</option>
+              <option value="ongoing">En cours</option>
+              <option value="completed">Terminée</option>
+            </select>
+          </div>
+          <div className="flex gap-3 pt-2">
+            <Button variant="primary" size="md" onClick={assignExperience}
+              disabled={savingAssign || !assignExpId}
+            >
+              {savingAssign ? 'Assignation…' : 'Assigner'}
+            </Button>
+            <Button variant="ghost" size="md" onClick={() => setAssignModal(false)}>Annuler</Button>
           </div>
         </div>
       </Modal>

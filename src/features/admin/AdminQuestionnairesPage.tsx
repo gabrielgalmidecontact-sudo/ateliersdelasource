@@ -271,6 +271,13 @@ export function AdminQuestionnairesPage() {
                         >
                           <Trash2 size={16} className="text-[#D4C4A8] hover:text-red-400 transition-colors" />
                         </button>
+                        <Link
+                          href={`/admin/questionnaires/${tpl.id}`}
+                          className="p-2 rounded-sm hover:bg-[#FAF6EF] transition-colors flex items-center gap-1 text-xs font-sans text-[#C8912A] hover:underline"
+                          title="Voir les réponses des membres"
+                        >
+                          Réponses
+                        </Link>
                         <button
                           onClick={() => loadQuestions(tpl.id)}
                           className="p-2 rounded-sm hover:bg-[#FAF6EF] transition-colors"
