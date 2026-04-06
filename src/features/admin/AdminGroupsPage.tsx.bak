@@ -1,0 +1,190 @@
+'use client'
+
+import { useEffect, useState, useCallback } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { ArrowLeft, Plus, Trash2, Edit2, Save, X, Users } from 'lucide-react'
+import { useAuth } from '@/lib/auth/AuthContext'
+import { Container } from '@/components/ui/Container'
+import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Modal'
+import { Input } from '@/components/ui/Input'
+import { AdminBeginnerMode } from '@/features/admin/AdminBeginnerMode'
+
+type Group = {
+  id: string
+  name: string
+  description: string | null
+  is_active: boolean
+  created_at: string
+  member_group_members?: { count: number }[]
+}
+
+export function AdminGroupsPage() {
+  const { user, isAdmin, isLoading } = useAuth()
+  const router = useRouter()
+
+  const [groups, setGroups] = useState<Group[]>([])
+  const [, setLoading] = useState(true)
+  const [editingId, setEditingId] = useState<string | null>(null)
+
+  const [createModal, setCreateModal] = useState(false)
+  const [form, setForm] = useState({ name: '', description: '' })
+  const [saving, setSaving] = useState(false)
+
+  const [editForm, setEditForm] = useState<{ id: string; name: string; description: string }>({
+    id: '',
+    name: '',
+    description: '',
+  })
+
+  useEffect(() => {
+    if (!isLoading) {
+      if (!user) router.push('/connexion')
+      else if (!isAdmin) router.push('/espace-membre')
+    }
+  }, [user, isAdmin, isLoading, router])
+
+  const loadGroups = useCallback(async () => {
+    if (!user) return
+    const res = await fetch('/api/admin/groups', {
+      headers: { Authorization: `Bearer ${user.accessToken}` },
+    })
+    if (res.ok) {
+      const d = await res.json()
+      setGroups(d.groups || [])
+    }
+    setLoading(false)
+  }, [user])
+
+  useEffect(() => {
+    if (!user || !isAdmin) return
+    setTimeout(() => loadGroups(), 0)
+  }, [user, isAdmin, loadGroups])
+
+  async function createGroup() {
+    if (!form.name || !user) return
+    setSaving(true)
+    const res = await fetch('/api/admin/groups', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.accessToken}` },
+      body: JSON.stringify(form),
+    })
+    setSaving(false)
+    if (res.ok) {
+      setCreateModal(false)
+      setForm({ name: '', description: '' })
+      loadGroups()
+    }
+  }
+
+  async function updateGroup() {
+    if (!editForm.id || !user) return
+    setSaving(true)
+    const res = await fetch('/api/admin/groups', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.accessToken}` },
+      body: JSON.stringify(editForm),
+    })
+    setSaving(false)
+    if (res.ok) {
+      setEditingId(null)
+      loadGroups()
+    }
+  }
+
+  async function deleteGroup(id: string) {
+    if (!confirm('Supprimer ce groupe ?')) return
+    await fetch('/api/admin/groups', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user!.accessToken}` },
+      body: JSON.stringify({ id }),
+    })
+    loadGroups()
+  }
+
+  function startEdit(g: Group) {
+    setEditingId(g.id)
+    setEditForm({
+      id: g.id,
+      name: g.name,
+      description: g.description || '',
+    })
+  }
+
+  if (isLoading || !user) return null
+
+  return (
+    <div className="min-h-screen bg-[#FAF6EF]">
+      <div className="bg-[#3B2315] border-b border-[#5C3D2E]">
+        <Container>
+          <div className="flex items-center justify-between py-4">
+            <div className="flex items-center gap-3">
+              <Link href="/admin" className="text-[#C8A888] hover:text-white">
+                <ArrowLeft size={18} />
+              </Link>
+              <span className="text-white">Groupes</span>
+            </div>
+            <AdminBeginnerMode />
+          </div>
+        </Container>
+      </div>
+
+      <div className="py-8">
+        <Container>
+
+          <div className="flex justify-between mb-6">
+            <h1 className="font-serif text-3xl text-[#5C3D2E]">Groupes de membres</h1>
+            <Button onClick={() => setCreateModal(true)}>
+              <Plus size={14}/> Nouveau groupe
+            </Button>
+          </div>
+
+          {groups.map(g => {
+            const count = (g.member_group_members?.[0] as { count: number } | undefined)?.count || 0
+
+            return (
+              <div key={g.id} className="bg-white border p-4 mb-3">
+
+                {editingId === g.id ? (
+                  <div className="space-y-2">
+                    <Input value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))}/>
+                    <Input value={editForm.description} onChange={e => setEditForm(p => ({ ...p, description: e.target.value }))}/>
+                    <div className="flex gap-2">
+                      <button onClick={updateGroup}><Save size={14}/> Sauver</button>
+                      <button onClick={() => setEditingId(null)}><X size={14}/> Annuler</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex justify-between">
+                    <div>
+                      <h2 className="font-serif">{g.name}</h2>
+                      <p className="text-sm text-gray-500">{g.description}</p>
+                      <p className="text-xs text-gray-400">{count} membres</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => startEdit(g)}><Edit2 size={14}/></button>
+                      <button onClick={() => deleteGroup(g.id)}><Trash2 size={14}/></button>
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            )
+          })}
+
+        </Container>
+      </div>
+
+      <Modal open={createModal} onClose={() => setCreateModal(false)}>
+        <h2>Créer un groupe</h2>
+        <Input placeholder="Nom" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}/>
+        <Input placeholder="Description" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))}/>
+        <Button onClick={createGroup} disabled={saving}>
+          {saving ? 'Création...' : 'Créer'}
+        </Button>
+      </Modal>
+
+    </div>
+  )
+}
