@@ -516,6 +516,10 @@ export interface Database {
           title: string
           description: string | null
           stage_log_id: string | null
+          stage_slug: string | null
+          experience_id: string | null
+          trigger_type: string | null
+          audience_type: string | null
           is_active: boolean
           created_by: string | null
           created_at: string
@@ -525,6 +529,10 @@ export interface Database {
           title: string
           description?: string | null
           stage_log_id?: string | null
+          stage_slug?: string | null
+          experience_id?: string | null
+          trigger_type?: string | null
+          audience_type?: string | null
           is_active?: boolean
           created_by?: string | null
         }
@@ -532,6 +540,10 @@ export interface Database {
           title?: string
           description?: string | null
           stage_log_id?: string | null
+          stage_slug?: string | null
+          experience_id?: string | null
+          trigger_type?: string | null
+          audience_type?: string | null
           is_active?: boolean
           updated_at?: string
         }
@@ -592,6 +604,7 @@ export interface Database {
           answer_rating: number | null
           answer_choice: string | null
           answer_yesno: boolean | null
+          selected_option_ids: string[] | null
           created_at: string
         }
         Insert: {
@@ -601,12 +614,125 @@ export interface Database {
           answer_rating?: number | null
           answer_choice?: string | null
           answer_yesno?: boolean | null
+          selected_option_ids?: string[] | null
         }
         Update: {
           answer_text?: string | null
           answer_rating?: number | null
           answer_choice?: string | null
           answer_yesno?: boolean | null
+          selected_option_ids?: string[] | null
+        }
+        Relationships: []
+      }
+      member_groups: {
+        Row: Record<string, unknown> & {
+          id: string
+          name: string
+          description: string | null
+          is_active: boolean
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          name: string
+          description?: string | null
+          is_active?: boolean
+          created_by?: string | null
+        }
+        Update: {
+          name?: string
+          description?: string | null
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      member_group_members: {
+        Row: Record<string, unknown> & {
+          id: string
+          group_id: string
+          member_id: string
+          created_at: string
+        }
+        Insert: {
+          group_id: string
+          member_id: string
+        }
+        Update: {
+          group_id?: string
+          member_id?: string
+        }
+        Relationships: []
+      }
+      questionnaire_assignments: {
+        Row: Record<string, unknown> & {
+          id: string
+          template_id: string
+          member_id: string | null
+          group_id: string | null
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          template_id: string
+          member_id?: string | null
+          group_id?: string | null
+          created_by?: string | null
+        }
+        Update: {
+          member_id?: string | null
+          group_id?: string | null
+        }
+        Relationships: []
+      }
+      question_options: {
+        Row: Record<string, unknown> & {
+          id: string
+          question_id: string
+          label: string | null
+          value: string | null
+          is_correct: boolean
+          sort_order: number
+          created_at: string
+        }
+        Insert: {
+          question_id: string
+          label?: string | null
+          value?: string | null
+          is_correct?: boolean
+          sort_order?: number
+        }
+        Update: {
+          label?: string | null
+          value?: string | null
+          is_correct?: boolean
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      questionnaire_results: {
+        Row: Record<string, unknown> & {
+          id: string
+          submission_id: string
+          score: number
+          max_score: number
+          percentage: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          submission_id: string
+          score?: number
+          max_score?: number
+          percentage?: number
+        }
+        Update: {
+          score?: number
+          max_score?: number
+          percentage?: number
+          updated_at?: string
         }
         Relationships: []
       }

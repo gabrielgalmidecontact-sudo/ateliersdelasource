@@ -42,16 +42,20 @@ function portableTextToPlainText(value: unknown): string {
 }
 
 function getOwnerName(value: unknown): string {
-  if (typeof value === 'string') return value
+  if (typeof value === 'string' && value.trim()) return value.trim()
   if (value && typeof value === 'object' && 'name' in value) {
     const name = (value as { name?: unknown }).name
-    return typeof name === 'string' ? name : ''
+    return typeof name === 'string' && name.trim() ? name.trim() : 'Les Ateliers'
   }
-  return ''
+  return 'Les Ateliers'
 }
 
 function getStringValue(value: unknown, fallback = ''): string {
-  return typeof value === 'string' ? value : fallback
+  return typeof value === 'string' && value.trim() ? value.trim() : fallback
+}
+
+function getBooleanValue(value: unknown, fallback = false): boolean {
+  return typeof value === 'boolean' ? value : fallback
 }
 
 function normalizeEventForUi(event: Event) {
@@ -65,11 +69,14 @@ function normalizeEventForUi(event: Event) {
     excerpt?: unknown
     startDate?: unknown
     endDate?: unknown
+    type?: unknown
+    registrationEnabled?: unknown
   }
 
   return {
     ...event,
     slug: getSlugValue(event.slug),
+    type: getStringValue(raw.type, 'Événement'),
     owner: getOwnerName(raw.owner),
     description: portableTextToPlainText(raw.description),
     excerpt: getStringValue(raw.excerpt),
@@ -77,14 +84,15 @@ function normalizeEventForUi(event: Event) {
     endDate: getStringValue(raw.endDate),
     location: getStringValue(raw.location),
     priceLabel: getStringValue(raw.priceLabel),
+    registrationEnabled: getBooleanValue(raw.registrationEnabled, false),
     capacity:
       typeof raw.capacity === 'number'
         ? String(raw.capacity)
         : getStringValue(raw.capacity),
     imageUrl:
       raw.coverImage
-        ? imageUrl(raw.coverImage, 1600, 900) || '/images/placeholders/event.jpg'
-        : '/images/placeholders/event.jpg',
+        ? imageUrl(raw.coverImage, 1600, 900) || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1600&q=80'
+        : 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1600&q=80',
   }
 }
 

@@ -3,6 +3,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
 
+type QuestionnaireTemplateUpdatePayload = {
+  updated_at: string
+  title?: string
+  description?: string | null
+  is_active?: boolean
+  audience_type?: string | null
+}
+
 async function requireAdmin(req: NextRequest) {
   const token = req.headers.get('authorization')?.replace('Bearer ', '')
   if (!token) return null
@@ -36,7 +44,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { id } = await params
   const body = await req.json()
 
-  const updatePayload = {
+  const updatePayload: QuestionnaireTemplateUpdatePayload = {
     updated_at: new Date().toISOString(),
   }
 
