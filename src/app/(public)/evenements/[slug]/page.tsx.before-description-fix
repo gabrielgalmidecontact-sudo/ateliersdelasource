@@ -1,0 +1,58 @@
+import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
+import { EventDetailPage } from '@/features/evenements/EventDetailPage'
+import { sanityFetch, sanityFetchArray } from '@/lib/sanity/fetch'
+import { allEventsQuery, eventBySlugQuery } from '@/lib/sanity/queries'
+import type { Event } from '@/types'
+
+export const revalidate = 60
+
+type Params = { slug: string }
+
+export async function generateStaticParams() {
+  const events = await sanityFetchArray<Event>(allEventsQuery)
+
+  return events
+    .map((event) => {
+      const slug =
+        typeof event.slug === 'object'
+          ? (event.slug as { current?: string })?.current
+          : typeof event.slug === 'string'
+            ? event.slug
+            : ''
+
+      return slug ? { slug } : null
+    })
+    .filter(Boolean) as { slug: string }[]
+}
+
+export async function generateMetadata(
+  { params }: { params: Promise<Params> }
+): Promise<Metadata> {
+  const { slug } = await params
+
+  const event = await sanityFetch<Event>(eventBySlugQuery, { slug })
+
+  if (!event) {
+    return { title: 'Événement introuvable' }
+  }
+
+  return {
+    title: event.title ?? 'Événement',
+    description: event.excerpt ?? 'Détail de l’événement',
+  }
+}
+
+export default async function EventPage(
+  { params }: { params: Promise<Params> }
+) {
+  const { slug } = await params
+
+  const event = await sanityFetch<Event>(eventBySlugQuery, { slug })
+
+  if (!event) {
+    notFound()
+  }
+
+  return <EventDetailPage event={event} />
+}

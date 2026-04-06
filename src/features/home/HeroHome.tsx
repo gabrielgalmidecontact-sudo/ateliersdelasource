@@ -4,25 +4,38 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ChevronDown } from 'lucide-react'
 
-export function HeroHome() {
+type HeroHomeProps = {
+  title?: string
+  subtitle?: string
+  imageUrl?: string
+}
+
+const FALLBACK_TITLE = 'Les Ateliers\nde la Source'
+const FALLBACK_SUBTITLE = 'Un lieu de ressourcement, de création et de transformation. Des propositions humaines, profondes et vivantes.'
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80'
+
+export function HeroHome({ title, subtitle, imageUrl }: HeroHomeProps) {
   const [visible, setVisible] = useState(true)
 
   useEffect(() => {
-    // Petit délai pour laisser le JS s'hydrater puis déclencher l'animation
     const t = setTimeout(() => setVisible(true), 80)
     return () => clearTimeout(t)
   }, [])
+
+  const displayTitle = title?.trim() || FALLBACK_TITLE
+  const displaySubtitle = subtitle?.trim() || FALLBACK_SUBTITLE
+  const displayImage = imageUrl?.trim() || FALLBACK_IMAGE
+  const titleLines = displayTitle.split('\n')
 
   return (
     <section
       className="relative h-screen min-h-[600px] max-h-[900px] flex items-center justify-center overflow-hidden"
       aria-label="Bandeau principal"
     >
-      {/* Background */}
       <div className="absolute inset-0 z-0">
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: `url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80')` }}
+          style={{ backgroundImage: `url('${displayImage}')` }}
           role="img"
           aria-label="Paysage naturel serein"
         />
@@ -30,7 +43,6 @@ export function HeroHome() {
         <div className="absolute inset-0 bg-[#5C3D2E]/20 mix-blend-multiply" />
       </div>
 
-      {/* Content */}
       <div
         className="relative z-10 text-center px-4 max-w-4xl mx-auto transition-all duration-1000 ease-out"
         style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(30px)' }}
@@ -39,15 +51,18 @@ export function HeroHome() {
           Stages · Ateliers · Spectacles
         </p>
         <h1 className="font-serif text-5xl sm:text-6xl md:text-7xl text-white leading-[1.05] mb-6">
-          Les Ateliers<br />
-          <span className="text-[#E0B060]">de la Source</span>
+          {titleLines.map((line, index) => (
+            <span key={`${line}-${index}`}>
+              {index === titleLines.length - 1 ? <span className="text-[#E0B060]">{line}</span> : line}
+              {index < titleLines.length - 1 ? <br /> : null}
+            </span>
+          ))}
         </h1>
         <p
           className="font-sans text-base sm:text-lg text-white/80 max-w-xl mx-auto mb-10 leading-relaxed transition-all duration-1000 delay-200 ease-out"
           style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(20px)' }}
         >
-          Un lieu de ressourcement, de création et de transformation.
-          Des propositions humaines, profondes et vivantes.
+          {displaySubtitle}
         </p>
         <div
           className="flex flex-col sm:flex-row gap-4 justify-center transition-all duration-1000 delay-300 ease-out"
@@ -68,7 +83,6 @@ export function HeroHome() {
         </div>
       </div>
 
-      {/* Scroll indicator */}
       <div
         className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 transition-opacity duration-1000 delay-700"
         style={{ opacity: visible ? 1 : 0 }}

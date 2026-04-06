@@ -1,13 +1,12 @@
 'use client'
-// src/features/blog/BlogListPage.tsx
-// Accepte les données de Sanity (via page.tsx) ou utilise les données statiques intégrées
+
 import { useRef, useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Calendar, ArrowRight } from 'lucide-react'
 import { Container } from '@/components/ui/Container'
+import { imageUrl } from '@/lib/sanity/image'
 
-// Type de post normalisé (compatible Sanity + statique)
 interface PostItem {
   _id?: string
   title: string
@@ -20,17 +19,29 @@ interface PostItem {
 }
 
 const MONTHS_FR = ['jan', 'fév', 'mar', 'avr', 'mai', 'jun', 'jul', 'aoû', 'sep', 'oct', 'nov', 'déc']
+const BLOG_FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80'
 
-// Normalize slug (string ou {current: string})
 function getSlug(slug: PostItem['slug']): string {
   return typeof slug === 'string' ? slug : slug.current
 }
 
-// Normalize author name
 function getAuthorName(author: PostItem['author']): string {
   if (!author) return 'Les Ateliers'
   if (typeof author === 'string') return author
   return author.name
+}
+
+function getImageSrc(post: PostItem): string {
+  if (post.imageUrl) return post.imageUrl
+  if (post.coverImage) {
+    return imageUrl(post.coverImage, 900, 600) || BLOG_FALLBACK_IMAGE
+  }
+  return BLOG_FALLBACK_IMAGE
+}
+
+function isValidPublishedDate(value?: string): boolean {
+  if (!value) return false
+  return !Number.isNaN(new Date(value).getTime())
 }
 
 function PostCard({ post, index }: { post: PostItem; index: number }) {
@@ -38,21 +49,30 @@ function PostCard({ post, index }: { post: PostItem; index: number }) {
   const [visible, setVisible] = useState(true)
   const slug = getSlug(post.slug)
   const authorName = getAuthorName(post.author)
-  const date = post.publishedAt ? new Date(post.publishedAt) : null
+  const imageSrc = getImageSrc(post)
+  const hasDate = isValidPublishedDate(post.publishedAt)
+  const date = hasDate ? new Date(post.publishedAt as string) : null
   const formattedDate = date
     ? `${date.getDate()} ${MONTHS_FR[date.getMonth()]} ${date.getFullYear()}`
     : null
 
-  // Image source : url directe ou Sanity CDN
-  const imageSrc = post.imageUrl || '/images/placeholders/blog.jpg'
-
   useEffect(() => {
     const el = ref.current
-    if (!el) { setVisible(true); return }
+    if (!el) {
+      setVisible(true)
+      return
+    }
+
     const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect() } },
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true)
+          obs.disconnect()
+        }
+      },
       { threshold: 0.05 }
     )
+
     obs.observe(el)
     return () => obs.disconnect()
   }, [])
@@ -77,19 +97,23 @@ function PostCard({ post, index }: { post: PostItem; index: number }) {
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             />
           </div>
+
           <div className="flex-1 flex flex-col p-6">
-            <div className="flex items-center gap-2 mb-3 text-xs font-sans text-[#7A6355]">
+            <div className="flex items-center gap-2 mb-3 text-xs font-sans text-[#7A6355] flex-wrap">
               <Calendar size={12} className="text-[#C8912A]" />
-              {formattedDate && <span>{formattedDate}</span>}
-              {formattedDate && <span className="text-[#D4C4A8]">·</span>}
+              {formattedDate ? <span>{formattedDate}</span> : <span>Date à confirmer</span>}
+              <span className="text-[#D4C4A8]">·</span>
               <span>{authorName}</span>
             </div>
+
             <h2 className="font-serif text-xl text-[#5C3D2E] group-hover:text-[#C8912A] leading-snug mb-3 transition-colors duration-200">
               {post.title}
             </h2>
+
             <p className="text-sm font-sans text-[#7A6355] leading-relaxed flex-1 line-clamp-3">
-              {post.excerpt}
+              {post.excerpt || 'Article à découvrir prochainement.'}
             </p>
+
             <div className="mt-5 flex items-center gap-1 text-sm font-sans font-medium text-[#5C3D2E] group-hover:text-[#C8912A] transition-colors duration-200">
               Lire l&apos;article
               <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform duration-200" />
@@ -110,38 +134,7 @@ export function BlogListPage({ posts: propPosts, fromSanity }: BlogListPageProps
   const heroRef = useRef<HTMLDivElement>(null)
   const [heroVisible, setHeroVisible] = useState(true)
 
-  // Données statiques intégrées (utilisées quand pas de props)
-  const staticPosts: PostItem[] = [
-    {
-      _id: 'p1',
-      title: 'Le Double : cette ombre qui nous suit',
-      slug: { current: 'le-double-cette-ombre-qui-nous-suit' },
-      excerpt: "Qu'est-ce que le Double Karmique ? Pourquoi certaines situations se répètent-elles dans notre vie ? Une introduction au travail que nous proposons lors de nos stages.",
-      publishedAt: '2025-03-15',
-      author: { name: 'Gabriel' },
-      imageUrl: 'https://images.unsplash.com/photo-1516912481808-3406841bd33c?w=800&q=80',
-    },
-    {
-      _id: 'p2',
-      title: "Et si votre vie n'était pas un hasard ?",
-      slug: { current: 'et-si-votre-vie-n-etait-pas-un-hasard' },
-      excerpt: "L'accompagnement biographique explore les rythmes invisibles qui traversent nos vies. Une approche profonde et douce pour comprendre son chemin.",
-      publishedAt: '2025-02-20',
-      author: { name: 'Gabriel' },
-      imageUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80',
-    },
-    {
-      _id: 'p3',
-      title: 'Le corps parle avant les mots',
-      slug: { current: 'le-corps-parle-avant-les-mots' },
-      excerpt: "Découvrez comment la posture, le souffle et le geste peuvent transformer notre façon de communiquer. Les secrets d'une expression juste et incarnée.",
-      publishedAt: '2025-01-10',
-      author: { name: 'Gabriel' },
-      imageUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&q=80',
-    },
-  ]
-
-  const posts = propPosts && propPosts.length > 0 ? propPosts : staticPosts
+  const posts = propPosts && propPosts.length > 0 ? propPosts : []
 
   useEffect(() => {
     setHeroVisible(true)
@@ -181,12 +174,11 @@ export function BlogListPage({ posts: propPosts, fromSanity }: BlogListPageProps
             <div className="text-center py-16">
               <p className="font-serif text-xl text-[#7A6355]">Aucun article pour le moment.</p>
               <p className="text-sm font-sans text-[#7A6355] mt-2">
-                Revenez bientôt pour découvrir nos premières publications.
+                Les premiers articles pourront être publiés directement depuis le Studio Sanity.
               </p>
             </div>
           )}
 
-          {/* Indicateur en dev si Sanity est actif */}
           {fromSanity && process.env.NODE_ENV === 'development' && (
             <p className="mt-8 text-center text-xs font-sans text-[#7A6355] opacity-50">
               ✓ Données chargées depuis Sanity CMS

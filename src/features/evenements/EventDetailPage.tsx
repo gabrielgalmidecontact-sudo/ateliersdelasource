@@ -26,20 +26,56 @@ interface EventData {
 }
 
 function formatContent(text: string) {
-  return text.split('\n\n').map((para, i) => (
+  const safeText = typeof text === 'string' ? text.trim() : ''
+  if (!safeText) {
+    return (
+      <p className="font-sans text-[#2D1F14] leading-relaxed">
+        Le contenu détaillé de cet événement sera bientôt disponible.
+      </p>
+    )
+  }
+
+  return safeText.split('\n\n').map((para, i) => (
     <p key={i} className="font-sans text-[#2D1F14] leading-relaxed mb-4">{para}</p>
   ))
 }
 
+function isValidDate(value?: string) {
+  if (!value) return false
+  return !Number.isNaN(new Date(value).getTime())
+}
+
+function formatDate(value?: string) {
+  if (!isValidDate(value)) return 'Date à confirmer'
+  const date = new Date(value as string)
+  return `${date.getDate()} ${MONTHS_FR[date.getMonth()]} ${date.getFullYear()}`
+}
+
 export function EventDetailPage({ event }: { event: EventData }) {
   const [visible, setVisible] = useState(true)
-  const startDate = new Date(event.startDate)
-  const endDate = new Date(event.endDate)
-  const isSameDay = event.startDate === event.endDate
-  const isPast = startDate < new Date()
 
-  const formattedStart = `${startDate.getDate()} ${MONTHS_FR[startDate.getMonth()]} ${startDate.getFullYear()}`
-  const formattedEnd = `${endDate.getDate()} ${MONTHS_FR[endDate.getMonth()]} ${endDate.getFullYear()}`
+  const hasStartDate = isValidDate(event.startDate)
+  const hasEndDate = isValidDate(event.endDate)
+
+  const startDate = hasStartDate ? new Date(event.startDate) : null
+  const endDate = hasEndDate ? new Date(event.endDate) : null
+
+  const isSameDay =
+    hasStartDate &&
+    hasEndDate &&
+    startDate!.toDateString() === endDate!.toDateString()
+
+  const isPast = hasStartDate ? startDate! < new Date() : false
+
+  const formattedStart = formatDate(event.startDate)
+  const formattedEnd = formatDate(event.endDate)
+
+  const ownerName = event.owner?.trim() || 'Les Ateliers'
+  const locationLabel = event.location?.trim() || 'Lieu à confirmer'
+  const priceLabel = event.priceLabel?.trim() || 'Tarif à confirmer'
+  const capacityLabel = event.capacity?.trim() || 'Capacité à confirmer'
+  const excerpt = event.excerpt?.trim()
+  const typeLabel = event.type?.trim() || 'Événement'
 
   const typeColors: Record<string, 'ocre' | 'vert' | 'brun' | 'ghost'> = {
     Stage: 'brun',
@@ -48,11 +84,12 @@ export function EventDetailPage({ event }: { event: EventData }) {
     Formation: 'ghost',
   }
 
-  useEffect(() => { setVisible(true) }, [])
+  useEffect(() => {
+    setVisible(true)
+  }, [])
 
   return (
     <>
-      {/* Hero */}
       <section className="relative h-[50vh] min-h-[380px] flex items-end overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img src={event.imageUrl} alt={event.title} className="w-full h-full object-cover" />
@@ -72,8 +109,9 @@ export function EventDetailPage({ event }: { event: EventData }) {
                 Tous les événements
               </Link>
               <div className="flex flex-wrap gap-2 mb-3">
-                <Badge variant={typeColors[event.type] || 'ghost'}>{event.type}</Badge>
+                <Badge variant={typeColors[typeLabel] || 'ghost'}>{typeLabel}</Badge>
                 {isPast && <Badge variant="ghost">Événement passé</Badge>}
+                {!hasStartDate && <Badge variant="ghost">Date à confirmer</Badge>}
               </div>
               <h1 className="font-serif text-3xl sm:text-4xl text-white leading-tight max-w-2xl">
                 {event.title}
@@ -83,11 +121,9 @@ export function EventDetailPage({ event }: { event: EventData }) {
         </div>
       </section>
 
-      {/* Content */}
       <div className="bg-[#FAF6EF] py-16 md:py-24">
         <Container>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-            {/* Main */}
             <div
               className="lg:col-span-2"
               style={{
@@ -96,13 +132,15 @@ export function EventDetailPage({ event }: { event: EventData }) {
                 transition: 'opacity 0.6s ease 100ms, transform 0.6s ease 100ms',
               }}
             >
-              <p className="text-lg font-sans text-[#7A6355] leading-relaxed mb-8 italic">
-                {event.excerpt}
-              </p>
+              {excerpt ? (
+                <p className="text-lg font-sans text-[#7A6355] leading-relaxed mb-8 italic">
+                  {excerpt}
+                </p>
+              ) : null}
+
               <div className="w-12 h-0.5 bg-gradient-to-r from-[#D4AF50] to-transparent mb-8" />
               <div>{formatContent(event.description)}</div>
 
-              {/* CTA */}
               <div className="mt-12 p-8 bg-[#F5EDD8] rounded-sm border border-[#D4C4A8]">
                 {event.registrationEnabled ? (
                   <>
@@ -116,18 +154,17 @@ export function EventDetailPage({ event }: { event: EventData }) {
                   <>
                     <h2 className="font-serif text-xl text-[#5C3D2E] mb-2">Intéressé·e ?</h2>
                     <p className="text-sm font-sans text-[#7A6355] mb-5">
-                      Pour vous inscrire ou obtenir plus d&apos;informations, contactez {event.owner} directement.
+                      Pour vous inscrire ou obtenir plus d&apos;informations, contactez {ownerName} directement.
                     </p>
                     <Button href="/contact" variant="primary" size="md">
                       <Mail size={16} />
-                      Contacter {event.owner}
+                      Contacter {ownerName}
                     </Button>
                   </>
                 )}
               </div>
             </div>
 
-            {/* Sidebar */}
             <div
               className="lg:col-span-1"
               style={{
@@ -145,7 +182,11 @@ export function EventDetailPage({ event }: { event: EventData }) {
                       <div>
                         <p className="text-xs font-sans uppercase tracking-wider text-[#7A6355] mb-0.5">Date</p>
                         <p className="text-sm font-sans text-[#2D1F14]">
-                          {isSameDay ? formattedStart : `Du ${formattedStart} au ${formattedEnd}`}
+                          {!hasStartDate
+                            ? 'Date à confirmer'
+                            : !hasEndDate || isSameDay
+                              ? formattedStart
+                              : `Du ${formattedStart} au ${formattedEnd}`}
                         </p>
                       </div>
                     </div>
@@ -153,21 +194,21 @@ export function EventDetailPage({ event }: { event: EventData }) {
                       <MapPin size={16} className="text-[#C8912A] mt-0.5 flex-shrink-0" />
                       <div>
                         <p className="text-xs font-sans uppercase tracking-wider text-[#7A6355] mb-0.5">Lieu</p>
-                        <p className="text-sm font-sans text-[#2D1F14]">{event.location}</p>
+                        <p className="text-sm font-sans text-[#2D1F14]">{locationLabel}</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
                       <Tag size={16} className="text-[#C8912A] mt-0.5 flex-shrink-0" />
                       <div>
                         <p className="text-xs font-sans uppercase tracking-wider text-[#7A6355] mb-0.5">Tarif</p>
-                        <p className="text-sm font-sans text-[#2D1F14]">{event.priceLabel}</p>
+                        <p className="text-sm font-sans text-[#2D1F14]">{priceLabel}</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
                       <Users size={16} className="text-[#C8912A] mt-0.5 flex-shrink-0" />
                       <div>
                         <p className="text-xs font-sans uppercase tracking-wider text-[#7A6355] mb-0.5">Places</p>
-                        <p className="text-sm font-sans text-[#2D1F14]">{event.capacity}</p>
+                        <p className="text-sm font-sans text-[#2D1F14]">{capacityLabel}</p>
                       </div>
                     </div>
                   </div>

@@ -1,5 +1,6 @@
 'use client'
 // src/features/evenements/EventsListPage.tsx
+// Accepte les données Sanity (via page.tsx server) ou utilise les données statiques intégrées
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { Calendar, MapPin, ArrowRight, Filter } from 'lucide-react'
@@ -9,7 +10,6 @@ import type { Event } from '@/types'
 import { imageUrl } from '@/lib/sanity/image'
 
 const MONTHS_SHORT = ['jan', 'fév', 'mar', 'avr', 'mai', 'jun', 'jul', 'aoû', 'sep', 'oct', 'nov', 'déc']
-const EVENT_FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80'
 
 type DisplayEvent = {
   id: string
@@ -25,11 +25,66 @@ type DisplayEvent = {
   imageUrl: string
 }
 
+const STATIC_EVENTS: DisplayEvent[] = [
+  {
+    id: 'e1',
+    title: 'Théâtre des Doubles Karmiques',
+    slug: 'theatre-doubles-karmiques-juin-2025',
+    type: 'Stage',
+    startDate: '2025-06-06',
+    endDate: '2025-06-09',
+    location: 'Les Ateliers de la Source',
+    owner: 'Gabriel',
+    priceLabel: 'Sur devis',
+    excerpt: 'Stage de développement personnel sur 3 jours et demi. 4 à 5 participants maximum.',
+    imageUrl: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=800&q=80',
+  },
+  {
+    id: 'e2',
+    title: 'Nos Émerveillements',
+    slug: 'nos-emerveillements-mai-2025',
+    type: 'Atelier',
+    startDate: '2025-05-05',
+    endDate: '2025-05-05',
+    location: 'Les Ateliers de la Source',
+    owner: 'Gabriel',
+    priceLabel: 'Sur devis',
+    excerpt: "Atelier collectif autour de l'émerveillement et de la présence au monde.",
+    imageUrl: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=800&q=80',
+  },
+  {
+    id: 'e3',
+    title: 'Dernières Places — Stage printemps',
+    slug: 'dernieres-places-stage-avril',
+    type: 'Stage',
+    startDate: '2025-04-21',
+    endDate: '2025-04-24',
+    location: 'Les Ateliers de la Source',
+    owner: 'Gabriel',
+    priceLabel: 'Sur devis',
+    excerpt: 'Quelques dernières places disponibles pour ce stage de développement personnel.',
+    imageUrl: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&q=80',
+  },
+  {
+    id: 'e4',
+    title: 'Rêves à 100 000 euros — Spectacle',
+    slug: 'reves-100000-euros-spectacle-2025',
+    type: 'Spectacle',
+    startDate: '2025-07-12',
+    endDate: '2025-07-12',
+    location: 'À préciser',
+    owner: 'Gabriel',
+    priceLabel: 'Au chapeau',
+    excerpt: 'Un soir, une histoire folle et vraie. Semi-improvisation, participation du public.',
+    imageUrl: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80',
+  },
+]
+
 function normalizeSanityEvent(e: Event): DisplayEvent {
   const slug = typeof e.slug === 'object' ? (e.slug as { current: string }).current : String(e.slug ?? '')
   const img = e.coverImage
-    ? imageUrl(e.coverImage, 800, 500) || EVENT_FALLBACK_IMAGE
-    : EVENT_FALLBACK_IMAGE
+    ? imageUrl(e.coverImage, 800, 500) || ''
+    : 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80'
 
   const ownerName = typeof e.owner === 'object' && e.owner
     ? (e.owner as { name?: string }).name ?? ''
@@ -107,6 +162,7 @@ function EventCard({ event, index }: { event: DisplayEvent; index: number }) {
       <Link href={`/evenements/${event.slug}`} className="group block" aria-label={`Voir : ${event.title}`}>
         <article className={`flex gap-0 rounded-sm border overflow-hidden transition-all duration-300 hover:shadow-lg ${isPast ? 'opacity-60 border-[#D4C4A8]' : 'border-[#D4C4A8] hover:border-[#C8912A]/60'} bg-white`}>
           <div className="hidden sm:block w-44 flex-shrink-0 overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={event.imageUrl}
               alt={event.title}
@@ -178,7 +234,7 @@ export function EventsListPage({ sanityEvents }: Props = {}) {
 
   const events: DisplayEvent[] = sanityEvents && sanityEvents.length > 0
     ? sanityEvents.map(normalizeSanityEvent)
-    : []
+    : STATIC_EVENTS
 
   const filtered = filter === 'Tous' ? events : events.filter(e => e.type === filter)
 
@@ -265,10 +321,8 @@ export function EventsListPage({ sanityEvents }: Props = {}) {
 
           {filtered.length === 0 && (
             <div className="text-center py-16">
-              <p className="font-serif text-xl text-[#7A6355]">Aucun événement pour le moment.</p>
-              <p className="text-sm font-sans text-[#7A6355] mt-2">
-                Les prochains stages et événements pourront être publiés directement depuis le Studio Sanity.
-              </p>
+              <p className="font-serif text-xl text-[#7A6355]">Aucun événement dans cette catégorie pour le moment.</p>
+              <p className="text-sm font-sans text-[#7A6355] mt-2">Revenez bientôt ou contactez-nous pour être informé.</p>
             </div>
           )}
         </Container>

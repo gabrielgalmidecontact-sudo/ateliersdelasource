@@ -3,7 +3,6 @@ import { notFound } from 'next/navigation'
 import { EventDetailPage } from '@/features/evenements/EventDetailPage'
 import { sanityFetch, sanityFetchArray } from '@/lib/sanity/fetch'
 import { allEventsQuery, eventBySlugQuery } from '@/lib/sanity/queries'
-import { imageUrl } from '@/lib/sanity/image'
 import type { Event } from '@/types'
 
 export const revalidate = 60
@@ -41,53 +40,6 @@ function portableTextToPlainText(value: unknown): string {
     .join('\n\n')
 }
 
-function getOwnerName(value: unknown): string {
-  if (typeof value === 'string') return value
-  if (value && typeof value === 'object' && 'name' in value) {
-    const name = (value as { name?: unknown }).name
-    return typeof name === 'string' ? name : ''
-  }
-  return ''
-}
-
-function getStringValue(value: unknown, fallback = ''): string {
-  return typeof value === 'string' ? value : fallback
-}
-
-function normalizeEventForUi(event: Event) {
-  const raw = event as Event & {
-    description?: unknown
-    owner?: unknown
-    coverImage?: unknown
-    capacity?: unknown
-    location?: unknown
-    priceLabel?: unknown
-    excerpt?: unknown
-    startDate?: unknown
-    endDate?: unknown
-  }
-
-  return {
-    ...event,
-    slug: getSlugValue(event.slug),
-    owner: getOwnerName(raw.owner),
-    description: portableTextToPlainText(raw.description),
-    excerpt: getStringValue(raw.excerpt),
-    startDate: getStringValue(raw.startDate),
-    endDate: getStringValue(raw.endDate),
-    location: getStringValue(raw.location),
-    priceLabel: getStringValue(raw.priceLabel),
-    capacity:
-      typeof raw.capacity === 'number'
-        ? String(raw.capacity)
-        : getStringValue(raw.capacity),
-    imageUrl:
-      raw.coverImage
-        ? imageUrl(raw.coverImage, 1600, 900) || '/images/placeholders/event.jpg'
-        : '/images/placeholders/event.jpg',
-  }
-}
-
 export async function generateStaticParams() {
   const events = await sanityFetchArray<Event>(allEventsQuery)
 
@@ -111,10 +63,7 @@ export async function generateMetadata(
 
   return {
     title: event.title ?? 'Événement',
-    description:
-      typeof event.excerpt === 'string' && event.excerpt.trim().length > 0
-        ? event.excerpt
-        : 'Détail de l’événement',
+    description: event.excerpt ?? 'Détail de l’événement',
   }
 }
 
@@ -128,7 +77,11 @@ export default async function EventPage(
     notFound()
   }
 
-  const normalizedEvent = normalizeEventForUi(event)
+  const normalizedEvent = {
+    ...event,
+    description: portableTextToPlainText((event as { description?: unknown }).description),
+    slug: getSlugValue(event.slug),
+  }
 
-  return <EventDetailPage event={normalizedEvent} />
+  return <EventDetailPage event={normalizedEvent as Event} />
 }

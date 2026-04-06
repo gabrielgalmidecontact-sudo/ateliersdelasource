@@ -1,78 +1,125 @@
-// src/app/(public)/blog/[slug]/page.tsx
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { BlogDetailPage } from '@/features/blog/BlogDetailPage'
+import { sanityFetch, sanityFetchArray } from '@/lib/sanity/fetch'
+import { allPostsQuery, postBySlugQuery } from '@/lib/sanity/queries'
+import { imageUrl } from '@/lib/sanity/image'
+import type { Post } from '@/types'
 
-const posts = [
-  {
-    title: 'Le Double : cette ombre qui nous suit',
-    slug: 'le-double-cette-ombre-qui-nous-suit',
-    excerpt: 'Qu\'est-ce que le Double Karmique ? Pourquoi certaines situations se répètent-elles dans notre vie ? Une introduction au travail que nous proposons lors de nos stages.',
-    publishedAt: '2025-03-15',
-    author: 'Gabriel',
-    imageUrl: 'https://images.unsplash.com/photo-1516912481808-3406841bd33c?w=1400&q=80',
-    content: `Dans chaque vie, il existe des situations qui se répètent. Des comportements que l'on reconnaît, que l'on regrette parfois, mais qu'on semble incapable de changer durablement.
+export const revalidate = 60
 
-« Je suis toujours en retard quand c'est important. »
-« Je me retrouve toujours dans des relations qui ne fonctionnent pas. »
-« On me reproche toujours la même chose. »
+type Params = { slug: string }
 
-Ces patterns, nous les appelons le Double. Non pas dans un sens pathologique ou négatif — mais comme une structure de comportement, une habitude profonde, une empreinte invisible qui traverse nos actions.
+function getSlugValue(value: unknown): string {
+  if (typeof value === 'string') return value
+  if (value && typeof value === 'object' && 'current' in value) {
+    const current = (value as { current?: unknown }).current
+    return typeof current === 'string' ? current : ''
+  }
+  return ''
+}
 
-Le théâtre, étonnamment, est l'un des espaces les plus puissants pour observer ces mécanismes. Parce que le jeu collectif reflète ce que nous portons. Parce que le groupe devient miroir. Parce que l'image est plus directe que les mots.
+function getAuthorName(value: unknown): string {
+  if (typeof value === 'string') return value
+  if (value && typeof value === 'object' && 'name' in value) {
+    const name = (value as { name?: unknown }).name
+    return typeof name === 'string' ? name : 'Les Ateliers'
+  }
+  return 'Les Ateliers'
+}
 
-C'est le cœur du travail que nous proposons dans le stage Théâtre des Doubles Karmiques : identifier, comprendre, puis désamorcer ces mécanismes répétitifs — avec douceur, créativité et profondeur.`,
-  },
-  {
-    title: 'Et si votre vie n\'était pas un hasard ?',
-    slug: 'et-si-votre-vie-n-etait-pas-un-hasard',
-    excerpt: 'L\'accompagnement biographique explore les rythmes invisibles qui traversent nos vies. Une approche profonde et douce pour comprendre son chemin.',
-    publishedAt: '2025-02-20',
-    author: 'Gabriel',
-    imageUrl: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1400&q=80',
-    content: `Lorsqu'on observe une vie avec suffisamment de recul, on commence à distinguer des patterns, des rythmes, des correspondances troublantes entre des événements séparés par des années.
+function portableTextToPlainText(value: unknown): string {
+  if (typeof value === 'string') return value
+  if (!Array.isArray(value)) return ''
 
-Cyr Boé, auprès de qui je me suis formé pendant trois ans, parle de « lois biographiques » — des structures rhythmiques qui traversent nos vies et semblent lui donner un sens.
+  return value
+    .map((block) => {
+      if (!block || typeof block !== 'object') return ''
+      const children = (block as { children?: unknown }).children
+      if (!Array.isArray(children)) return ''
 
-L'accompagnement biographique ne cherche pas à interpréter votre vie de l'extérieur. Il vous invite à l'observer, avec recul et curiosité, comme on observe un texte qu'on commence seulement à comprendre.
+      return children
+        .map((child) => {
+          if (!child || typeof child !== 'object') return ''
+          const text = (child as { text?: unknown }).text
+          return typeof text === 'string' ? text : ''
+        })
+        .join('')
+    })
+    .filter(Boolean)
+    .join('\n\n')
+}
 
-Et si votre vie n'était pas une succession de hasards ? Et si chaque tournant, chaque rencontre, chaque épreuve participait d'une intelligence plus vaste ?
+function normalizePostForUi(post: Post) {
+  const raw = post as Post & {
+    content?: unknown
+    author?: unknown
+    coverImage?: unknown
+    excerpt?: unknown
+    publishedAt?: unknown
+  }
 
-Ce sont ces questions — simples et profondes — que nous explorons ensemble lors d'un entretien biographique.`,
-  },
-  {
-    title: 'Le corps parle avant les mots',
-    slug: 'le-corps-parle-avant-les-mots',
-    excerpt: 'Découvrez comment la posture, le souffle et le geste peuvent transformer notre façon de communiquer. Les secrets d\'une expression juste et incarnée.',
-    publishedAt: '2025-01-10',
-    author: 'Gabriel',
-    imageUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=1400&q=80',
-    content: `Quand j'étais jeune, je ne pouvais pas soutenir le regard des autres. Parler en public me semblait au-dessus de mes forces. Rire librement — impossible.
-
-C'est par le théâtre, la danse, et de nombreux stages que j'ai découvert quelque chose d'essentiel : le corps est le premier espace de la parole.
-
-Avant que les mots sortent, le corps a déjà parlé. La posture, le regard, la façon d'occuper l'espace, le rythme du souffle — tout cela précède et conditionne le message.
-
-C'est pour ça que les ateliers d'expression que je propose passent autant par le corps que par la voix. On ne travaille pas « à parler mieux » en mode technique. On explore ce qui se passe dans le corps quand on souhaite s'exprimer — et on apprend à lui faire confiance.
-
-Car lorsque le corps s'ouvre, le verbe s'ajuste. Et quand le verbe s'ajuste, quelque chose se libère.`,
-  },
-]
+  return {
+    ...post,
+    slug: getSlugValue(post.slug),
+    author: getAuthorName(raw.author),
+    excerpt:
+      typeof raw.excerpt === 'string' && raw.excerpt.trim().length > 0
+        ? raw.excerpt
+        : '',
+    publishedAt:
+      typeof raw.publishedAt === 'string' && raw.publishedAt.trim().length > 0
+        ? raw.publishedAt
+        : '',
+    content: portableTextToPlainText(raw.content),
+    imageUrl:
+      raw.coverImage
+        ? imageUrl(raw.coverImage, 1600, 900) || '/images/placeholders/blog.jpg'
+        : '/images/placeholders/blog.jpg',
+  }
+}
 
 export async function generateStaticParams() {
-  return posts.map(p => ({ slug: p.slug }))
+  const posts = await sanityFetchArray<Post>(allPostsQuery)
+
+  return posts
+    .map((post) => {
+      const slug = getSlugValue(post.slug)
+      return slug ? { slug } : null
+    })
+    .filter(Boolean) as { slug: string }[]
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+export async function generateMetadata(
+  { params }: { params: Promise<Params> }
+): Promise<Metadata> {
   const { slug } = await params
-  const post = posts.find(p => p.slug === slug)
-  if (!post) return { title: 'Article introuvable' }
-  return { title: post.title, description: post.excerpt }
+  const post = await sanityFetch<Post>(postBySlugQuery, { slug })
+
+  if (!post) {
+    return { title: 'Article introuvable' }
+  }
+
+  return {
+    title: post.title ?? 'Article',
+    description:
+      typeof post.excerpt === 'string' && post.excerpt.trim().length > 0
+        ? post.excerpt
+        : 'Article du blog',
+  }
 }
 
-export default async function PostPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function PostPage(
+  { params }: { params: Promise<Params> }
+) {
   const { slug } = await params
-  const post = posts.find(p => p.slug === slug)
-  if (!post) notFound()
-  return <BlogDetailPage post={post} />
+  const post = await sanityFetch<Post>(postBySlugQuery, { slug })
+
+  if (!post) {
+    notFound()
+  }
+
+  const normalizedPost = normalizePostForUi(post)
+
+  return <BlogDetailPage post={normalizedPost} />
 }

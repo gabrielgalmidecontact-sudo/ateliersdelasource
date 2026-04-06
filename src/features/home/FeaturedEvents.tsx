@@ -17,18 +17,36 @@ function useFadeIn(delay = 0) {
   return { ref, visible }
 }
 
-const placeholderEvents = [
+type HomeEvent = {
+  id: string
+  title: string
+  type: string
+  startDate?: string
+  location?: string
+  slug: string
+}
+
+const placeholderEvents: HomeEvent[] = [
   { id: '1', title: 'Théâtre des Doubles Karmiques', type: 'Stage', startDate: '2025-06-06', location: 'Les Ateliers de la Source', slug: 'theatre-doubles-karmiques-juin-2025' },
   { id: '2', title: 'Nos Émerveillements', type: 'Atelier', startDate: '2025-05-05', location: 'Les Ateliers de la Source', slug: 'nos-emerveillements-mai-2025' },
   { id: '3', title: 'Dernières Places disponibles', type: 'Stage', startDate: '2025-04-21', location: 'Les Ateliers de la Source', slug: 'dernieres-places-stage-avril' },
 ]
+
 const MONTHS_FR = ['jan', 'fév', 'mar', 'avr', 'mai', 'jun', 'jul', 'aoû', 'sep', 'oct', 'nov', 'déc']
 
-function EventCard({ event, index }: { event: typeof placeholderEvents[0]; index: number }) {
+function isValidDate(value?: string) {
+  if (!value) return false
+  return !Number.isNaN(new Date(value).getTime())
+}
+
+function EventCard({ event, index }: { event: HomeEvent; index: number }) {
   const { ref, visible } = useFadeIn(index * 100)
-  const date = new Date(event.startDate)
-  const day = date.getDate().toString().padStart(2, '0')
-  const month = MONTHS_FR[date.getMonth()]
+  const hasDate = isValidDate(event.startDate)
+  const date = hasDate ? new Date(event.startDate as string) : null
+  const day = date ? date.getDate().toString().padStart(2, '0') : '—'
+  const month = date ? MONTHS_FR[date.getMonth()] : 'date'
+  const locationLabel = event.location?.trim() || 'Lieu à confirmer'
+  const typeLabel = event.type?.trim() || 'Événement'
 
   return (
     <div
@@ -44,14 +62,14 @@ function EventCard({ event, index }: { event: typeof placeholderEvents[0]; index
               <span className="text-xs font-sans uppercase tracking-widest text-[#C8912A] mt-1">{month}</span>
             </div>
             <div className="flex-1 p-5">
-              <span className="text-xs font-sans uppercase tracking-wider text-[#C8912A] font-medium">{event.type}</span>
+              <span className="text-xs font-sans uppercase tracking-wider text-[#C8912A] font-medium">{typeLabel}</span>
               <h3 className="mt-1.5 font-serif text-lg text-[#5C3D2E] group-hover:text-[#C8912A] leading-snug transition-colors duration-200">{event.title}</h3>
             </div>
           </div>
           <div className="mt-auto px-5 py-3 border-t border-[#D4C4A8]/50 flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 text-xs font-sans text-[#7A6355]">
               <MapPin size={12} className="flex-shrink-0" />
-              <span className="truncate">{event.location}</span>
+              <span className="truncate">{locationLabel}</span>
             </div>
             <div className="flex items-center gap-1 text-xs font-sans text-[#C8912A] font-medium whitespace-nowrap">
               Voir le détail
@@ -64,8 +82,20 @@ function EventCard({ event, index }: { event: typeof placeholderEvents[0]; index
   )
 }
 
-export function FeaturedEvents() {
+type FeaturedEventsProps = {
+  events?: HomeEvent[]
+}
+
+export function FeaturedEvents({ events }: FeaturedEventsProps) {
   const { ref, visible } = useFadeIn()
+
+  const safeEvents = (events ?? []).filter((event) => {
+    const slug = event.slug?.trim()
+    return Boolean(slug) && !slug.startsWith('http://') && !slug.startsWith('https://')
+  })
+
+  const displayedEvents = safeEvents.length > 0 ? safeEvents : placeholderEvents
+
   return (
     <section className="py-20 md:py-28 bg-[#F5EDD8]" aria-labelledby="events-title">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -79,7 +109,7 @@ export function FeaturedEvents() {
           <div className="mt-4 w-16 h-0.5 bg-gradient-to-r from-transparent via-[#D4AF50] to-transparent mx-auto" />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {placeholderEvents.map((event, i) => <EventCard key={event.id} event={event} index={i} />)}
+          {displayedEvents.map((event, i) => <EventCard key={event.id} event={event} index={i} />)}
         </div>
         <div className="mt-12 text-center">
           <Link href="/evenements" className="inline-flex items-center justify-center gap-2 rounded-sm font-sans font-medium px-6 py-3 text-sm uppercase tracking-widest transition-all duration-200 bg-transparent text-[#5C3D2E] border border-[#5C3D2E] hover:bg-[#5C3D2E] hover:text-[#F5EDD8]">
