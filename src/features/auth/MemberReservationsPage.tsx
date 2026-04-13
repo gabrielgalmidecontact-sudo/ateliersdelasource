@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Container } from '@/components/ui/Container'
 import { Button } from '@/components/ui/Button'
-import { ArrowLeft, Calendar, CheckCircle, Clock, XCircle, AlertCircle } from 'lucide-react'
+import { Input, Textarea } from '@/components/ui/Input'
+import { ArrowLeft, Calendar, CheckCircle, Clock, XCircle, AlertCircle, Loader2 } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthContext'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -43,12 +44,44 @@ const PAYMENT_CONFIG: Record<string, { label: string; color: string }> = {
   refunded: { label: 'Remboursé', color: '#6B7280' },
 }
 
+const ACCOMMODATION_OPTIONS = [
+  { value: '', label: 'Sans hébergement précisé' },
+  { value: 'shared', label: 'Chambre partagée' },
+  { value: 'private', label: 'Chambre individuelle' },
+  { value: 'external', label: 'Hébergement externe' },
+]
+
+function formatAccommodation(value: string | null | undefined) {
+  switch (value) {
+    case 'shared':
+      return 'Chambre partagée'
+    case 'private':
+      return 'Chambre individuelle'
+    case 'external':
+      return 'Hébergement externe'
+    default:
+      return '—'
+  }
+}
+
 export function MemberReservationsPage() {
   const { user, isLoading } = useAuth()
   const router = useRouter()
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
   const [visible, setVisible] = useState(true)
+  const [formSuccess, setFormSuccess] = useState('')
+  const [formError, setFormError] = useState('')
+  const [form, setForm] = useState({
+    event_title: '',
+    event_slug: '',
+    event_date: '',
+    accommodation_type: '',
+    arrival_time: '',
+    departure_time: '',
+    notes: '',
+  })
 
   useEffect(() => {
     setVisible(true)
@@ -80,6 +113,63 @@ export function MemberReservationsPage() {
   useEffect(() => {
     if (user) loadReservations()
   }, [user, loadReservations])
+
+  function handleChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!user || submitting) return
+
+    setSubmitting(true)
+    setFormError('')
+    setFormSuccess('')
+
+    try {
+      const res = await fetch('/api/member/reservations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.accessToken}`,
+        },
+        body: JSON.stringify({
+          event_title: form.event_title.trim(),
+          event_slug: form.event_slug.trim(),
+          event_date: form.event_date,
+          accommodation_type: form.accommodation_type || null,
+          arrival_time: form.arrival_time.trim() || null,
+          departure_time: form.departure_time.trim() || null,
+          notes: form.notes.trim() || null,
+        }),
+      })
+
+      const data = await res.json().catch(() => ({}))
+
+      if (!res.ok) {
+        setFormError(data?.error || 'Impossible de créer la réservation')
+        return
+      }
+
+      setForm({
+        event_title: '',
+        event_slug: '',
+        event_date: '',
+        accommodation_type: '',
+        arrival_time: '',
+        departure_time: '',
+        notes: '',
+      })
+      setFormSuccess('Votre demande de réservation a bien été enregistrée.')
+      await loadReservations()
+    } catch {
+      setFormError('Erreur de connexion')
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   if (isLoading || !user) {
     return (
@@ -116,7 +206,143 @@ export function MemberReservationsPage() {
               transform: visible ? 'none' : 'translateY(20px)',
               transition: 'opacity 0.5s ease, transform 0.5s ease',
             }}
+            className="space-y-8"
           >
+            <div className="bg-white rounded-sm border border-[#D4C4A8] p-8">
+              <div className="mb-6">
+                <h2 className="font-serif text-2xl text-[#5C3D2E] mb-2">Demande de réservation</h2>
+                <p className="text-sm font-sans text-[#7A6355] leading-relaxed">
+                  Indiquez l’atelier ou le stage souhaité ainsi que vos informations d’organisation.
+                  Vos préférences alimentaires enregistrées dans votre profil seront reprises automatiquement.
+                </p>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <Input
+                    label="Nom de l’atelier / stage"
+                    name="event_title"
+                    value={form.event_title}
+                    onChange={handleChange}
+                    placeholder="Ex. Théâtre des Doubles Karmiques"
+                    required
+                    className="bg-[#FAF6EF]"
+                  />
+                  <Input
+                    label="Slug de l’événement"
+                    name="event_slug"
+                    value={form.event_slug}
+                    onChange={handleChange}
+                    placeholder="ex. theatre-des-doubles-karmiques"
+                    required
+                    className="bg-[#FAF6EF]"
+                    hint="Identifiant simple de l’événement, utilisé côté organisation."
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div>
+                    <label
+                      htmlFor="event_date"
+                      className="block text-sm font-sans font-medium text-[#5C3D2E] mb-1.5"
+                    >
+                      Date souhaitée
+                    </label>
+                    <input
+                      id="event_date"
+                      name="event_date"
+                      type="date"
+                      value={form.event_date}
+                      onChange={handleChange}
+                      required
+                      className="w-full rounded-sm border border-[#D4C4A8] bg-[#FAF6EF] px-4 py-3 font-sans text-sm text-[#2D1F14] transition-colors duration-200 focus:outline-none focus:border-[#C8912A] focus:ring-1 focus:ring-[#C8912A]/30"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="accommodation_type"
+                      className="block text-sm font-sans font-medium text-[#5C3D2E] mb-1.5"
+                    >
+                      Hébergement
+                    </label>
+                    <select
+                      id="accommodation_type"
+                      name="accommodation_type"
+                      value={form.accommodation_type}
+                      onChange={handleChange}
+                      className="w-full rounded-sm border border-[#D4C4A8] bg-[#FAF6EF] px-4 py-3 font-sans text-sm text-[#2D1F14] transition-colors duration-200 focus:outline-none focus:border-[#C8912A] focus:ring-1 focus:ring-[#C8912A]/30"
+                    >
+                      {ACCOMMODATION_OPTIONS.map((option) => (
+                        <option key={option.value || 'empty'} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <Input
+                    label="Heure d’arrivée (optionnel)"
+                    name="arrival_time"
+                    value={form.arrival_time}
+                    onChange={handleChange}
+                    placeholder="Ex. 18h00"
+                    className="bg-[#FAF6EF]"
+                  />
+                  <Input
+                    label="Heure de départ (optionnel)"
+                    name="departure_time"
+                    value={form.departure_time}
+                    onChange={handleChange}
+                    placeholder="Ex. 15h30"
+                    className="bg-[#FAF6EF]"
+                  />
+                </div>
+
+                <Textarea
+                  label="Remarques complémentaires"
+                  name="notes"
+                  value={form.notes}
+                  onChange={handleChange}
+                  placeholder="Questions, contraintes particulières, précisions utiles..."
+                  rows={4}
+                  className="bg-[#FAF6EF]"
+                />
+
+                {formError && (
+                  <div className="flex items-center gap-2 p-3 bg-[#FEF2F2] border border-[#FECACA] rounded-sm">
+                    <AlertCircle size={16} className="text-red-600 flex-shrink-0" />
+                    <p className="text-sm font-sans text-red-600">{formError}</p>
+                  </div>
+                )}
+
+                {formSuccess && (
+                  <div className="flex items-center gap-2 p-3 bg-[#F0F5EC] border border-[#B8D4A8] rounded-sm">
+                    <CheckCircle size={16} className="text-[#4A5E3A] flex-shrink-0" />
+                    <p className="text-sm font-sans text-[#4A5E3A]">{formSuccess}</p>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-4 pt-2">
+                  <Button type="submit" variant="primary" size="md" disabled={submitting}>
+                    {submitting ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        Enregistrement...
+                      </>
+                    ) : (
+                      'Envoyer ma demande'
+                    )}
+                  </Button>
+                  <p className="text-xs font-sans text-[#7A6355]">
+                    Les informations de repas et d’accueil proviennent de votre profil.
+                  </p>
+                </div>
+              </form>
+            </div>
+
             {loading ? (
               <div className="flex justify-center py-16">
                 <div className="w-8 h-8 border-2 border-[#C8912A] border-t-transparent rounded-full animate-spin" />
@@ -137,16 +363,6 @@ export function MemberReservationsPage() {
                     Voir les prochains stages
                   </Button>
                 </div>
-
-                <div className="mt-6 p-5 bg-[#F5EDD8] rounded-sm border border-[#D4C4A8]">
-                  <div className="flex items-start gap-2">
-                    <AlertCircle size={16} className="text-[#C8912A] flex-shrink-0 mt-0.5" />
-                    <p className="text-xs font-sans text-[#7A6355]">
-                      <span className="font-medium text-[#5C3D2E]">Pour vous inscrire à un stage : </span>
-                      Utilisez le formulaire de contact sur chaque page de stage, ou contactez directement Gabriel ou Amélie.
-                    </p>
-                  </div>
-                </div>
               </>
             ) : (
               <div className="space-y-4">
@@ -159,9 +375,8 @@ export function MemberReservationsPage() {
                   return (
                     <div
                       key={res.id}
-                      className={`bg-white rounded-sm border p-5 flex items-center gap-4 flex-wrap ${isPast ? 'border-[#D4C4A8]/50 opacity-80' : 'border-[#D4C4A8]'}`}
+                      className={`bg-white rounded-sm border p-5 flex items-start gap-4 flex-wrap ${isPast ? 'border-[#D4C4A8]/50 opacity-80' : 'border-[#D4C4A8]'}`}
                     >
-                      {/* Date badge */}
                       <div
                         className="w-14 h-14 rounded-sm flex flex-col items-center justify-center text-white flex-shrink-0"
                         style={{ backgroundColor: isPast ? '#7A6355' : '#5C3D2E' }}
@@ -177,33 +392,55 @@ export function MemberReservationsPage() {
                         </span>
                       </div>
 
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-serif text-base text-[#5C3D2E] mb-1">{res.event_title}</h3>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {/* Status badge */}
-                          <span
-                            className="inline-flex items-center gap-1 text-xs font-sans px-2 py-0.5 rounded-full"
-                            style={{ color: statusConfig.color, backgroundColor: statusConfig.bg }}
-                          >
-                            {statusConfig.icon}
-                            {statusConfig.label}
-                          </span>
-                          {/* Payment badge */}
-                          <span
-                            className="text-xs font-sans"
-                            style={{ color: paymentConfig.color }}
-                          >
-                            {paymentConfig.label}
-                            {res.amount_cents ? ` (${(res.amount_cents / 100).toFixed(0)} €)` : ''}
-                          </span>
+                      <div className="flex-1 min-w-0 space-y-3">
+                        <div>
+                          <h3 className="font-serif text-base text-[#5C3D2E] mb-1">{res.event_title}</h3>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span
+                              className="inline-flex items-center gap-1 text-xs font-sans px-2 py-0.5 rounded-full"
+                              style={{ color: statusConfig.color, backgroundColor: statusConfig.bg }}
+                            >
+                              {statusConfig.icon}
+                              {statusConfig.label}
+                            </span>
+                            <span
+                              className="text-xs font-sans"
+                              style={{ color: paymentConfig.color }}
+                            >
+                              {paymentConfig.label}
+                              {res.amount_cents ? ` (${(res.amount_cents / 100).toFixed(0)} €)` : ''}
+                            </span>
+                          </div>
                         </div>
-                        {res.notes && (
-                          <p className="text-xs font-sans text-[#7A6355] mt-1 italic">{res.notes}</p>
-                        )}
+
+                        <div className="bg-[#FAF6EF] border border-[#D4C4A8]/50 rounded-sm p-4 space-y-2">
+                          <p className="text-xs uppercase tracking-wider text-[#7A6355]">
+                            Organisation enregistrée
+                          </p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-sans">
+                            <div>
+                              <span className="text-[#7A6355]">Hébergement :</span>{' '}
+                              <span className="text-[#2D1F14]">{formatAccommodation(res.accommodation_type)}</span>
+                            </div>
+                            <div>
+                              <span className="text-[#7A6355]">Arrivée :</span>{' '}
+                              <span className="text-[#2D1F14]">{res.arrival_time || '—'}</span>
+                            </div>
+                            <div>
+                              <span className="text-[#7A6355]">Départ :</span>{' '}
+                              <span className="text-[#2D1F14]">{res.departure_time || '—'}</span>
+                            </div>
+                            <div>
+                              <span className="text-[#7A6355]">Régime enregistré :</span>{' '}
+                              <span className="text-[#2D1F14]">{res.diet_type || '—'}</span>
+                            </div>
+                          </div>
+                          {res.notes && (
+                            <p className="text-xs font-sans text-[#7A6355] italic">{res.notes}</p>
+                          )}
+                        </div>
                       </div>
 
-                      {/* Date inscription */}
                       <div className="text-right flex-shrink-0">
                         <p className="text-xs font-sans text-[#7A6355]">Inscrit le</p>
                         <p className="text-xs font-sans text-[#5C3D2E] font-medium">

@@ -1,0 +1,220 @@
+// src/app/api/admin/reservation-groups/route.ts
+import { NextRequest, NextResponse } from 'next/server'
+import { createServerClient } from '@/lib/supabase/server'
+
+type RawReservation = {
+  id: string
+  member_id: string
+  event_slug: string
+  event_title: string
+  event_date: string
+  status: string
+  payment_status: string
+  amount_cents: number | null
+  stripe_session_id: string | null
+  notes: string | null
+  diet_type: string | null
+  food_allergies: string | null
+  food_intolerances: string | null
+  diet_notes: string | null
+  logistics_notes: string | null
+  accommodation_type: string | null
+  arrival_time: string | null
+  departure_time: string | null
+  created_at: string
+}
+
+type RawProfile = {
+  id: string
+  email: string
+  first_name: string | null
+  last_name: string | null
+  phone: string | null
+  city: string | null
+}
+
+async function requireAdmin(req: NextRequest) {
+  const authHeader = req.headers.get('authorization') || ''
+  const token = authHeader.startsWith('Bearer ')
+    ? authHeader.slice(7).trim()
+    : authHeader.trim()
+
+  if (!token) return null
+
+  const supabase = createServerClient()
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser(token)
+
+  if (userError || !user) return null
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (profile?.role !== 'admin') return null
+
+  return { supabase, user }
+}
+
+function buildGroupKey(reservation: RawReservation) {
+  return `${reservation.event_slug}__${reservation.event_date}`
+}
+
+export async function GET(req: NextRequest) {
+  const ctx = await requireAdmin(req)
+  if (!ctx) {
+    return NextResponse.json({ error: 'Accès refusé' }, { status: 403 })
+  }
+
+  const { supabase } = ctx
+  const url = new URL(req.url)
+  const search = (url.searchParams.get('q') || '').trim().toLowerCase()
+
+  const { data: reservations, error } = await supabase
+    .from('reservations')
+    .select('*')
+    .order('event_date', { ascending: true })
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 })
+  }
+
+  const reservationList = (reservations || []) as RawReservation[]
+
+  if (reservationList.length === 0) {
+    return NextResponse.json({ groups: [] })
+  }
+
+  const memberIds = Array.from(new Set(reservationList.map(r => r.member_id)))
+
+  const { data: profiles, error: profilesError } = await supabase
+    .from('profiles')
+    .select('id, email, first_name, last_name, phone, city')
+    .in('id', memberIds)
+
+  if (profilesError) {
+    return NextResponse.json({ error: profilesError.message }, { status: 400 })
+  }
+
+  const profileMap = new Map<string, RawProfile>()
+  for (const profile of (profiles || []) as RawProfile[]) {
+    profileMap.set(profile.id, profile)
+  }
+
+  const groupMap = new Map<string, {
+    group_key: string
+    event_slug: string
+    event_title: string
+    event_date: string
+    reservations_count: number
+    confirmed_count: number
+    pending_count: number
+    cancelled_count: number
+    completed_count: number
+    participants: Array<{
+      reservation_id: string
+      member_id: string
+      full_name: string
+      email: string
+      phone: string | null
+      city: string | null
+      status: string
+      payment_status: string
+      amount_cents: number | null
+      notes: string | null
+      diet_type: string | null
+      food_allergies: string | null
+      food_intolerances: string | null
+      diet_notes: string | null
+      logistics_notes: string | null
+      accommodation_type: string | null
+      arrival_time: string | null
+      departure_time: string | null
+      created_at: string
+    }>
+  }>()
+
+  for (const reservation of reservationList) {
+    const key = buildGroupKey(reservation)
+    const profile = profileMap.get(reservation.member_id)
+
+    if (!groupMap.has(key)) {
+      groupMap.set(key, {
+        group_key: key,
+        event_slug: reservation.event_slug,
+        event_title: reservation.event_title,
+        event_date: reservation.event_date,
+        reservations_count: 0,
+        confirmed_count: 0,
+        pending_count: 0,
+        cancelled_count: 0,
+        completed_count: 0,
+        participants: [],
+      })
+    }
+
+    const group = groupMap.get(key)!
+    group.reservations_count += 1
+
+    if (reservation.status === 'confirmed') group.confirmed_count += 1
+    else if (reservation.status === 'pending') group.pending_count += 1
+    else if (reservation.status === 'cancelled') group.cancelled_count += 1
+    else if (reservation.status === 'completed') group.completed_count += 1
+
+    const fullName = [profile?.first_name, profile?.last_name]
+      .filter(Boolean)
+      .join(' ')
+      .trim()
+
+    group.participants.push({
+      reservation_id: reservation.id,
+      member_id: reservation.member_id,
+      full_name: fullName || profile?.email || 'Membre',
+      email: profile?.email || '—',
+      phone: profile?.phone || null,
+      city: profile?.city || null,
+      status: reservation.status,
+      payment_status: reservation.payment_status,
+      amount_cents: reservation.amount_cents,
+      notes: reservation.notes,
+      diet_type: reservation.diet_type,
+      food_allergies: reservation.food_allergies,
+      food_intolerances: reservation.food_intolerances,
+      diet_notes: reservation.diet_notes,
+      logistics_notes: reservation.logistics_notes,
+      accommodation_type: reservation.accommodation_type,
+      arrival_time: reservation.arrival_time,
+      departure_time: reservation.departure_time,
+      created_at: reservation.created_at,
+    })
+  }
+
+  let groups = Array.from(groupMap.values())
+    .sort((a, b) => {
+      const dateDiff = new Date(a.event_date).getTime() - new Date(b.event_date).getTime()
+      if (dateDiff !== 0) return dateDiff
+      return a.event_title.localeCompare(b.event_title, 'fr')
+    })
+
+  if (search) {
+    groups = groups.filter(group => {
+      const haystack = [
+        group.event_title,
+        group.event_slug,
+        group.event_date,
+        ...group.participants.map(p => `${p.full_name} ${p.email} ${p.city || ''}`),
+      ]
+        .join(' ')
+        .toLowerCase()
+
+      return haystack.includes(search)
+    })
+  }
+
+  return NextResponse.json({ groups })
+}

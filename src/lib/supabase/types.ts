@@ -14,6 +14,11 @@ export interface Profile {
   bio: string | null
   motivation: string | null
   avatar_url: string | null
+  diet_type: string | null
+  food_allergies: string | null
+  food_intolerances: string | null
+  diet_notes: string | null
+  logistics_notes: string | null
   role: 'member' | 'admin'
   newsletter_global: boolean
   newsletter_stages: boolean
@@ -79,6 +84,14 @@ export interface Reservation {
   amount_cents: number | null
   stripe_session_id: string | null
   notes: string | null
+  diet_type: string | null
+  food_allergies: string | null
+  food_intolerances: string | null
+  diet_notes: string | null
+  logistics_notes: string | null
+  accommodation_type: string | null
+  arrival_time: string | null
+  departure_time: string | null
   created_at: string
 }
 
@@ -253,6 +266,11 @@ export interface Database {
           bio: string | null
           motivation: string | null
           avatar_url: string | null
+          diet_type: string | null
+          food_allergies: string | null
+          food_intolerances: string | null
+          diet_notes: string | null
+          logistics_notes: string | null
           role: string
           newsletter_global: boolean
           newsletter_stages: boolean
@@ -272,6 +290,11 @@ export interface Database {
           bio?: string | null
           motivation?: string | null
           avatar_url?: string | null
+          diet_type?: string | null
+          food_allergies?: string | null
+          food_intolerances?: string | null
+          diet_notes?: string | null
+          logistics_notes?: string | null
           role?: string
           newsletter_global?: boolean
           newsletter_stages?: boolean
@@ -288,6 +311,11 @@ export interface Database {
           bio?: string | null
           motivation?: string | null
           avatar_url?: string | null
+          diet_type?: string | null
+          food_allergies?: string | null
+          food_intolerances?: string | null
+          diet_notes?: string | null
+          logistics_notes?: string | null
           role?: string
           newsletter_global?: boolean
           newsletter_stages?: boolean
@@ -411,6 +439,16 @@ export interface Database {
           amount_cents: number | null
           stripe_session_id: string | null
           notes: string | null
+
+          diet_type: string | null
+          food_allergies: string | null
+          food_intolerances: string | null
+          diet_notes: string | null
+          logistics_notes: string | null
+          accommodation_type: string | null
+          arrival_time: string | null
+          departure_time: string | null
+
           created_at: string
         }
         Insert: {
@@ -423,6 +461,15 @@ export interface Database {
           amount_cents?: number | null
           stripe_session_id?: string | null
           notes?: string | null
+
+          diet_type?: string | null
+          food_allergies?: string | null
+          food_intolerances?: string | null
+          diet_notes?: string | null
+          logistics_notes?: string | null
+          accommodation_type?: string | null
+          arrival_time?: string | null
+          departure_time?: string | null
         }
         Update: {
           event_slug?: string
@@ -433,6 +480,15 @@ export interface Database {
           amount_cents?: number | null
           stripe_session_id?: string | null
           notes?: string | null
+
+          diet_type?: string | null
+          food_allergies?: string | null
+          food_intolerances?: string | null
+          diet_notes?: string | null
+          logistics_notes?: string | null
+          accommodation_type?: string | null
+          arrival_time?: string | null
+          departure_time?: string | null
         }
         Relationships: []
       }

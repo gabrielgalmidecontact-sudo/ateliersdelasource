@@ -62,6 +62,38 @@ function StarDisplay({ value }: { value: number | null }) {
   )
 }
 
+function formatDietType(value: string | null | undefined) {
+  switch (value) {
+    case 'omnivore':
+      return 'Omnivore'
+    case 'vegetarian':
+      return 'Végétarien'
+    case 'vegan':
+      return 'Végan'
+    case 'pescatarian':
+      return 'Pescétarien'
+    case 'no_preference':
+      return 'Sans préférence'
+    case 'other':
+      return 'Autre'
+    default:
+      return '—'
+  }
+}
+
+function formatAccommodation(value: string | null | undefined) {
+  switch (value) {
+    case 'shared':
+      return 'Chambre partagée'
+    case 'private':
+      return 'Chambre individuelle'
+    case 'external':
+      return 'Hébergement externe'
+    default:
+      return '—'
+  }
+}
+
 function CompetencyBar({ mc }: { mc: MemberCompetency & { competency?: Competency } }) {
   const comp = mc.competency
   return (
@@ -670,21 +702,74 @@ export function AdminMemberDetailPage({ memberId }: { memberId: string }) {
                 ) : (
                   <div className="space-y-3">
                     {reservations.map(res => (
-                      <div key={res.id} className="bg-white rounded-sm border border-[#D4C4A8] p-5 flex items-center gap-4">
-                        <div className="w-12 h-12 bg-[#5C3D2E] rounded-sm flex flex-col items-center justify-center text-white flex-shrink-0">
-                          <span className="font-serif text-lg font-bold leading-none">{new Date(res.event_date).getDate()}</span>
-                          <span className="text-[10px] font-sans text-[#C8912A]">
-                            {new Date(res.event_date).toLocaleDateString('fr-FR', { month: 'short' })}
-                          </span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-serif text-base text-[#5C3D2E]">{res.event_title}</h3>
-                          <div className="flex items-center gap-2 mt-1 flex-wrap">
-                            <span className={`text-xs font-sans px-2 py-0.5 rounded-full ${STATUS_COLORS[res.status] || 'bg-[#F5F5F5] text-[#7A6355]'}`}>
-                              {res.status}
+                      <div key={res.id} className="bg-white rounded-sm border border-[#D4C4A8] p-5 space-y-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-[#5C3D2E] rounded-sm flex flex-col items-center justify-center text-white flex-shrink-0">
+                            <span className="font-serif text-lg font-bold leading-none">
+                              {new Date(res.event_date).getDate()}
                             </span>
-                            <span className="text-xs font-sans text-[#7A6355]">{res.payment_status}</span>
+                            <span className="text-[10px] text-[#C8912A]">
+                              {new Date(res.event_date).toLocaleDateString('fr-FR', { month: 'short' })}
+                            </span>
                           </div>
+
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-serif text-base text-[#5C3D2E]">{res.event_title}</h3>
+                            <div className="flex gap-2 mt-1 flex-wrap">
+                              <span className={`text-xs font-sans px-2 py-0.5 rounded-full ${STATUS_COLORS[res.status] || 'bg-[#F5F5F5] text-[#7A6355]'}`}>
+                                {res.status}
+                              </span>
+                              <span className="text-xs font-sans text-[#7A6355]">
+                                {res.payment_status}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="bg-[#FAF6EF] p-4 rounded-sm border border-[#D4C4A8]/50 space-y-2">
+                          <p className="text-xs uppercase tracking-wider text-[#7A6355]">
+                            Logistique & accueil
+                          </p>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-sans">
+                            <div>
+                              <span className="text-[#7A6355]">Régime :</span>{' '}
+                              <span className="text-[#2D1F14]">{formatDietType(res.diet_type)}</span>
+                            </div>
+
+                            <div>
+                              <span className="text-[#7A6355]">Allergies :</span>{' '}
+                              <span className="text-[#2D1F14]">{res.food_allergies || '—'}</span>
+                            </div>
+
+                            <div>
+                              <span className="text-[#7A6355]">Intolérances :</span>{' '}
+                              <span className="text-[#2D1F14]">{res.food_intolerances || '—'}</span>
+                            </div>
+
+                            <div>
+                              <span className="text-[#7A6355]">Hébergement :</span>{' '}
+                              <span className="text-[#2D1F14]">{formatAccommodation(res.accommodation_type)}</span>
+                            </div>
+
+                            <div>
+                              <span className="text-[#7A6355]">Arrivée :</span>{' '}
+                              <span className="text-[#2D1F14]">{res.arrival_time || '—'}</span>
+                            </div>
+
+                            <div>
+                              <span className="text-[#7A6355]">Départ :</span>{' '}
+                              <span className="text-[#2D1F14]">{res.departure_time || '—'}</span>
+                            </div>
+                          </div>
+
+                          {res.diet_notes && (
+                            <p className="text-xs text-[#5C3D2E] italic">“{res.diet_notes}”</p>
+                          )}
+
+                          {res.logistics_notes && (
+                            <p className="text-xs text-[#5C3D2E] italic">“{res.logistics_notes}”</p>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -695,37 +780,72 @@ export function AdminMemberDetailPage({ memberId }: { memberId: string }) {
 
             {/* ── Tab Profil ── */}
             {activeTab === 'profil' && (
-              <div className="bg-white rounded-sm border border-[#D4C4A8] p-6">
-                <h2 className="font-serif text-xl text-[#5C3D2E] mb-5">Informations du membre</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-sm font-sans">
-                  {[
-                    { label: 'Prénom', value: profile.first_name },
-                    { label: 'Nom', value: profile.last_name },
-                    { label: 'Email', value: profile.email },
-                    { label: 'Téléphone', value: profile.phone },
-                    { label: 'Ville', value: profile.city },
-                    { label: 'Rôle', value: profile.role },
-                    { label: 'Inscrit le', value: new Date(profile.created_at).toLocaleDateString('fr-FR') },
-                    { label: 'Newsletter', value: profile.newsletter_global ? 'Abonné·e' : 'Non abonné·e' },
-                  ].map(item => (
-                    <div key={item.label}>
-                      <p className="text-xs uppercase tracking-wider text-[#7A6355] mb-0.5">{item.label}</p>
-                      <p className="text-[#2D1F14]">{item.value || '—'}</p>
+              <div className="space-y-4">
+                <div className="bg-white rounded-sm border border-[#D4C4A8] p-6">
+                  <h2 className="font-serif text-xl text-[#5C3D2E] mb-5">Informations du membre</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-sm font-sans">
+                    {[
+                      { label: 'Prénom', value: profile.first_name },
+                      { label: 'Nom', value: profile.last_name },
+                      { label: 'Email', value: profile.email },
+                      { label: 'Téléphone', value: profile.phone },
+                      { label: 'Ville', value: profile.city },
+                      { label: 'Rôle', value: profile.role },
+                      { label: 'Inscrit le', value: new Date(profile.created_at).toLocaleDateString('fr-FR') },
+                      { label: 'Newsletter', value: profile.newsletter_global ? 'Abonné·e' : 'Non abonné·e' },
+                    ].map(item => (
+                      <div key={item.label}>
+                        <p className="text-xs uppercase tracking-wider text-[#7A6355] mb-0.5">{item.label}</p>
+                        <p className="text-[#2D1F14]">{item.value || '—'}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {profile.motivation && (
+                    <div className="mt-6 pt-5 border-t border-[#D4C4A8]">
+                      <p className="text-xs uppercase tracking-wider text-[#7A6355] mb-2">Motivation</p>
+                      <p className="text-sm italic text-[#5C3D2E]">&ldquo;{profile.motivation}&rdquo;</p>
                     </div>
-                  ))}
+                  )}
+                  {profile.bio && (
+                    <div className="mt-4">
+                      <p className="text-xs uppercase tracking-wider text-[#7A6355] mb-2">Bio</p>
+                      <p className="text-sm text-[#2D1F14] leading-relaxed">{profile.bio}</p>
+                    </div>
+                  )}
                 </div>
-                {profile.motivation && (
+
+                <div className="bg-white rounded-sm border border-[#D4C4A8] p-6">
+                  <div className="mb-5">
+                    <h2 className="font-serif text-xl text-[#5C3D2E] mb-2">Logistique & accueil</h2>
+                    <p className="text-sm font-sans text-[#7A6355] leading-relaxed">
+                      Informations utiles pour préparer l’accueil, les repas et l’organisation des stages ou séjours.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 text-sm font-sans">
+                    <div>
+                      <p className="text-xs uppercase tracking-wider text-[#7A6355] mb-0.5">Régime alimentaire</p>
+                      <p className="text-[#2D1F14]">{formatDietType(profile.diet_type)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-wider text-[#7A6355] mb-0.5">Allergies alimentaires</p>
+                      <p className="text-[#2D1F14]">{profile.food_allergies || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-wider text-[#7A6355] mb-0.5">Intolérances ou sensibilités</p>
+                      <p className="text-[#2D1F14]">{profile.food_intolerances || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-wider text-[#7A6355] mb-0.5">Précisions alimentaires</p>
+                      <p className="text-[#2D1F14]">{profile.diet_notes || '—'}</p>
+                    </div>
+                  </div>
+
                   <div className="mt-6 pt-5 border-t border-[#D4C4A8]">
-                    <p className="text-xs uppercase tracking-wider text-[#7A6355] mb-2">Motivation</p>
-                    <p className="text-sm italic text-[#5C3D2E]">&ldquo;{profile.motivation}&rdquo;</p>
+                    <p className="text-xs uppercase tracking-wider text-[#7A6355] mb-2">Remarques logistiques utiles</p>
+                    <p className="text-sm text-[#2D1F14] leading-relaxed">{profile.logistics_notes || '—'}</p>
                   </div>
-                )}
-                {profile.bio && (
-                  <div className="mt-4">
-                    <p className="text-xs uppercase tracking-wider text-[#7A6355] mb-2">Bio</p>
-                    <p className="text-sm text-[#2D1F14] leading-relaxed">{profile.bio}</p>
-                  </div>
-                )}
+                </div>
               </div>
             )}
 

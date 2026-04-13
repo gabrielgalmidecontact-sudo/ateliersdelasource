@@ -40,6 +40,7 @@ export async function PATCH(req: NextRequest) {
     const body = await req.json()
     // Champs modifiables par le membre
     const allowed = ['first_name', 'last_name', 'phone', 'city', 'bio', 'motivation',
+      'diet_type', 'food_allergies', 'food_intolerances', 'diet_notes', 'logistics_notes',
       'newsletter_global', 'newsletter_stages', 'newsletter_spectacles', 'newsletter_blog', 'newsletter_amelie']
     const updates: Record<string, unknown> = {}
     for (const key of allowed) {

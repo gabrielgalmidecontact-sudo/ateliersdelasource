@@ -2,12 +2,22 @@
 // src/features/auth/MemberProfilPage.tsx — connectée à Supabase (Bearer token)
 import { useState, useEffect, useCallback } from 'react'
 import { Container } from '@/components/ui/Container'
-import { Input } from '@/components/ui/Input'
+import { Input, Textarea } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { ArrowLeft, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthContext'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+
+const DIET_OPTIONS = [
+  { value: '', label: 'Sélectionner' },
+  { value: 'omnivore', label: 'Omnivore' },
+  { value: 'vegetarian', label: 'Végétarien' },
+  { value: 'vegan', label: 'Végan' },
+  { value: 'pescatarian', label: 'Pescétarien' },
+  { value: 'no_preference', label: 'Sans préférence' },
+  { value: 'other', label: 'Autre' },
+]
 
 export function MemberProfilPage() {
   const { user, isLoading, refreshProfile } = useAuth()
@@ -25,29 +35,34 @@ export function MemberProfilPage() {
     bio: '',
     motivation: '',
     city: '',
+    dietType: '',
+    foodAllergies: '',
+    foodIntolerances: '',
+    dietNotes: '',
+    logisticsNotes: '',
   })
 
   useEffect(() => {
     setVisible(true)
   }, [])
 
-  // Redirect if not authenticated
   useEffect(() => {
     if (!isLoading && !user) {
       router.push('/connexion?callbackUrl=/espace-membre/profil')
     }
   }, [user, isLoading, router])
 
-  // Charger le profil depuis Supabase via Bearer token
   const loadProfile = useCallback(async () => {
     if (!user) {
       setFetching(false)
       return
     }
+
     try {
       const res = await fetch('/api/member/profile', {
         headers: { Authorization: `Bearer ${user.accessToken}` },
       })
+
       if (res.ok) {
         const data = await res.json()
         const p = data.profile
@@ -60,6 +75,11 @@ export function MemberProfilPage() {
             bio: p.bio || '',
             motivation: p.motivation || '',
             city: p.city || '',
+            dietType: p.diet_type || '',
+            foodAllergies: p.food_allergies || '',
+            foodIntolerances: p.food_intolerances || '',
+            dietNotes: p.diet_notes || '',
+            logisticsNotes: p.logistics_notes || '',
           })
         } else {
           setForm((prev) => ({ ...prev, email: user.email || '' }))
@@ -76,15 +96,19 @@ export function MemberProfilPage() {
     loadProfile()
   }, [loadProfile])
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
+  function handleChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) {
     setForm((p) => ({ ...p, [e.target.name]: e.target.value }))
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!user) return
+
     setLoading(true)
     setError(null)
+
     try {
       const res = await fetch('/api/member/profile', {
         method: 'PATCH',
@@ -99,15 +123,20 @@ export function MemberProfilPage() {
           bio: form.bio,
           motivation: form.motivation,
           city: form.city,
+          diet_type: form.dietType || null,
+          food_allergies: form.foodAllergies || null,
+          food_intolerances: form.foodIntolerances || null,
+          diet_notes: form.dietNotes || null,
+          logistics_notes: form.logisticsNotes || null,
         }),
       })
+
       if (!res.ok) {
         const d = await res.json()
         setError(d.error || 'Erreur lors de la sauvegarde')
       } else {
         setSaved(true)
         setTimeout(() => setSaved(false), 3000)
-        // Rafraîchir le profil dans le contexte Auth
         await refreshProfile()
       }
     } catch {
@@ -127,7 +156,6 @@ export function MemberProfilPage() {
 
   return (
     <>
-      {/* Header */}
       <div className="pt-32 pb-12" style={{ backgroundColor: '#5C3D2E' }}>
         <Container>
           <Link
@@ -157,7 +185,7 @@ export function MemberProfilPage() {
                 <Loader2 size={32} className="animate-spin" style={{ color: '#5C3D2E' }} />
               </div>
             ) : (
-              <>
+              <form onSubmit={handleSubmit} className="space-y-6">
                 <div
                   className="bg-white p-8"
                   style={{ border: '1px solid #D4C4A8', borderRadius: '2px' }}
@@ -165,7 +193,8 @@ export function MemberProfilPage() {
                   <h2 className="font-serif mb-6" style={{ fontSize: '1.25rem', color: '#5C3D2E' }}>
                     Informations personnelles
                   </h2>
-                  <form onSubmit={handleSubmit} className="space-y-5">
+
+                  <div className="space-y-5">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                       <Input
                         label="Prénom"
@@ -184,6 +213,7 @@ export function MemberProfilPage() {
                         autoComplete="family-name"
                       />
                     </div>
+
                     <Input
                       label="Email"
                       name="email"
@@ -193,6 +223,7 @@ export function MemberProfilPage() {
                       placeholder="votre@email.fr"
                       disabled
                     />
+
                     <Input
                       label="Téléphone"
                       name="phone"
@@ -202,6 +233,7 @@ export function MemberProfilPage() {
                       placeholder="06 00 00 00 00"
                       autoComplete="tel"
                     />
+
                     <Input
                       label="Ville"
                       name="city"
@@ -210,89 +242,134 @@ export function MemberProfilPage() {
                       placeholder="Votre ville"
                       autoComplete="address-level2"
                     />
-                    <div>
-                      <label
-                        className="block text-sm font-medium mb-1.5"
-                        style={{ color: '#5C3D2E' }}
-                        htmlFor="motivation"
-                      >
-                        Ma motivation (optionnel)
-                      </label>
-                      <textarea
-                        id="motivation"
-                        name="motivation"
-                        value={form.motivation}
-                        onChange={handleChange}
-                        placeholder="Pourquoi rejoindre les Ateliers de la Source ?"
-                        rows={3}
-                        className="w-full px-4 py-3 text-sm font-sans outline-none resize-none"
-                        style={{
-                          background: '#FAF6EF',
-                          border: '1px solid #D4C4A8',
-                          color: '#2D1F14',
-                          borderRadius: '2px',
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <label
-                        className="block text-sm font-medium mb-1.5"
-                        style={{ color: '#5C3D2E' }}
-                        htmlFor="bio"
-                      >
-                        À propos de moi (optionnel)
-                      </label>
-                      <textarea
-                        id="bio"
-                        name="bio"
-                        value={form.bio}
-                        onChange={handleChange}
-                        placeholder="Quelques mots sur votre démarche, vos intérêts..."
-                        rows={4}
-                        className="w-full px-4 py-3 text-sm font-sans outline-none resize-none"
-                        style={{
-                          background: '#FAF6EF',
-                          border: '1px solid #D4C4A8',
-                          color: '#2D1F14',
-                          borderRadius: '2px',
-                        }}
-                      />
-                    </div>
 
-                    {error && (
-                      <div className="flex items-center gap-2 p-3" style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '2px' }}>
-                        <AlertCircle size={16} style={{ color: '#DC2626' }} />
-                        <p className="text-sm font-sans" style={{ color: '#DC2626' }}>{error}</p>
-                      </div>
-                    )}
+                    <Textarea
+                      label="Ma motivation (optionnel)"
+                      name="motivation"
+                      value={form.motivation}
+                      onChange={handleChange}
+                      placeholder="Pourquoi rejoindre les Ateliers de la Source ?"
+                      rows={3}
+                      className="bg-[#FAF6EF]"
+                    />
 
-                    <div className="pt-2 flex items-center gap-4">
-                      <Button type="submit" variant="primary" size="md" disabled={loading}>
-                        {loading ? 'Enregistrement...' : 'Enregistrer'}
-                      </Button>
-                      {saved && (
-                        <span
-                          className="flex items-center gap-1.5 text-sm font-sans"
-                          style={{ color: '#4A5E3A' }}
-                        >
-                          <CheckCircle size={16} /> Enregistré !
-                        </span>
-                      )}
-                    </div>
-                  </form>
+                    <Textarea
+                      label="À propos de moi (optionnel)"
+                      name="bio"
+                      value={form.bio}
+                      onChange={handleChange}
+                      placeholder="Quelques mots sur votre démarche, vos intérêts..."
+                      rows={4}
+                      className="bg-[#FAF6EF]"
+                    />
+                  </div>
                 </div>
 
-                {/* Note info */}
                 <div
-                  className="mt-6 p-5"
-                  style={{ background: '#F5EDD8', border: '1px solid #D4C4A8', borderRadius: '2px' }}
+                  className="bg-white p-8"
+                  style={{ border: '1px solid #D4C4A8', borderRadius: '2px' }}
                 >
-                  <p className="text-xs font-sans" style={{ color: '#7A6355' }}>
-                    <span className="font-medium" style={{ color: '#5C3D2E' }}>Note :</span>{' '}
-                    Vos informations sont confidentielles et accessibles uniquement par vous et les formateurs (Gabriel et Amélie).
-                  </p>
+                  <div className="mb-6">
+                    <h2 className="font-serif mb-2" style={{ fontSize: '1.25rem', color: '#5C3D2E' }}>
+                      Informations logistiques
+                    </h2>
+                    <p className="text-sm font-sans text-[#7A6355] leading-relaxed">
+                      Ces informations nous aident à vous accueillir dans les meilleures conditions
+                      lors des stages, ateliers ou séjours.
+                    </p>
+                  </div>
+
+                  <div className="space-y-5">
+                    <div>
+                      <label
+                        className="block text-sm font-sans font-medium text-[#5C3D2E] mb-1.5"
+                        htmlFor="dietType"
+                      >
+                        Régime alimentaire
+                      </label>
+                      <select
+                        id="dietType"
+                        name="dietType"
+                        value={form.dietType}
+                        onChange={handleChange}
+                        className="w-full rounded-sm border border-[#D4C4A8] bg-[#FAF6EF] px-4 py-3 font-sans text-sm text-[#2D1F14] transition-colors duration-200 focus:outline-none focus:border-[#C8912A] focus:ring-1 focus:ring-[#C8912A]/30"
+                      >
+                        {DIET_OPTIONS.map((option) => (
+                          <option key={option.value || 'empty'} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <Textarea
+                      label="Allergies alimentaires"
+                      name="foodAllergies"
+                      value={form.foodAllergies}
+                      onChange={handleChange}
+                      placeholder="Ex. arachides, fruits à coque, gluten…"
+                      rows={3}
+                      className="bg-[#FAF6EF]"
+                    />
+
+                    <Textarea
+                      label="Intolérances ou sensibilités"
+                      name="foodIntolerances"
+                      value={form.foodIntolerances}
+                      onChange={handleChange}
+                      placeholder="Ex. lactose, digestion sensible, aliments à éviter…"
+                      rows={3}
+                      className="bg-[#FAF6EF]"
+                    />
+
+                    <Textarea
+                      label="Précisions alimentaires"
+                      name="dietNotes"
+                      value={form.dietNotes}
+                      onChange={handleChange}
+                      placeholder="Toute information complémentaire utile pour les repas."
+                      rows={3}
+                      className="bg-[#FAF6EF]"
+                    />
+
+                    <Textarea
+                      label="Remarques logistiques utiles"
+                      name="logisticsNotes"
+                      value={form.logisticsNotes}
+                      onChange={handleChange}
+                      placeholder="Informations utiles pour l'accueil, l'organisation ou le confort sur place."
+                      rows={4}
+                      className="bg-[#FAF6EF]"
+                    />
+                  </div>
                 </div>
-              </>
+
+                {error && (
+                  <div
+                    className="flex items-center gap-2 p-3"
+                    style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '2px' }}
+                  >
+                    <AlertCircle size={16} style={{ color: '#DC2626' }} />
+                    <p className="text-sm font-sans" style={{ color: '#DC2626' }}>
+                      {error}
+                    </p>
+                  </div>
+                )}
+
+                <div className="pt-2 flex items-center gap-4">
+                  <Button type="submit" variant="primary" size="md" disabled={loading}>
+                    {loading ? 'Enregistrement...' : 'Enregistrer'}
+                  </Button>
+                  {saved && (
+                    <span
+                      className="flex items-center gap-1.5 text-sm font-sans"
+                      style={{ color: '#4A5E3A' }}
+                    >
+                      <CheckCircle size={16} /> Enregistré !
+                    </span>
+                  )}
+                </div>
+              </form>
             )}
           </div>
         </Container>

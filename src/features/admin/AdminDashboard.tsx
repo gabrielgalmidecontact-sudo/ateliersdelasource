@@ -173,7 +173,7 @@ export function AdminDashboard() {
       external: true,
     },
     {
-      href: '/evenements',
+      href: '/admin/evenements',
       icon: <Calendar size={20} />,
       label: 'Événements',
       description: 'Agenda et inscriptions',

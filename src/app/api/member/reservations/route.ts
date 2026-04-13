@@ -6,7 +6,9 @@ async function getUser(req: NextRequest) {
   const token = req.headers.get('authorization')?.replace('Bearer ', '')
   if (!token) return null
   const supabase = createServerClient()
-  const { data: { user } } = await supabase.auth.getUser(token)
+  const {
+    data: { user },
+  } = await supabase.auth.getUser(token)
   return user
 }
 
@@ -37,6 +39,13 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = createServerClient()
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('diet_type, food_allergies, food_intolerances, diet_notes, logistics_notes')
+    .eq('id', user.id)
+    .single()
+
   const { data, error } = await supabase
     .from('reservations')
     .insert({
@@ -47,6 +56,14 @@ export async function POST(req: NextRequest) {
       status: 'pending',
       payment_status: 'free',
       notes: body.notes || null,
+      diet_type: profile?.diet_type || null,
+      food_allergies: profile?.food_allergies || null,
+      food_intolerances: profile?.food_intolerances || null,
+      diet_notes: profile?.diet_notes || null,
+      logistics_notes: profile?.logistics_notes || null,
+      accommodation_type: body.accommodation_type || null,
+      arrival_time: body.arrival_time || null,
+      departure_time: body.departure_time || null,
     })
     .select()
     .single()
