@@ -1,4 +1,6 @@
 import type { Metadata } from 'next'
+
+export const revalidate = 60
 import { HeroHome } from '@/features/home/HeroHome'
 import { HomeIntro } from '@/features/home/HomeIntro'
 import { FounderColumns } from '@/features/home/FounderColumns'

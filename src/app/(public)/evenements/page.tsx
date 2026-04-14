@@ -1,4 +1,6 @@
 import type { Metadata } from 'next'
+
+export const revalidate = 60
 import { EventsListPage } from '@/features/evenements/EventsListPage'
 import { sanityFetchArray } from '@/lib/sanity/fetch'
 import { allEventsQuery } from '@/lib/sanity/queries'
