@@ -19,6 +19,9 @@ type RawReservation = {
   diet_notes: string | null
   logistics_notes: string | null
   accommodation_type: string | null
+  transport_mode: string | null
+  arrival_location: string | null
+  needs_transfer: boolean
   arrival_time: string | null
   departure_time: string | null
   created_at: string
@@ -133,6 +136,9 @@ export async function GET(req: NextRequest) {
       diet_notes: string | null
       logistics_notes: string | null
       accommodation_type: string | null
+      transport_mode: string | null
+      arrival_location: string | null
+      needs_transfer: boolean
       arrival_time: string | null
       departure_time: string | null
       created_at: string
@@ -188,6 +194,9 @@ export async function GET(req: NextRequest) {
       diet_notes: reservation.diet_notes,
       logistics_notes: reservation.logistics_notes,
       accommodation_type: reservation.accommodation_type,
+      transport_mode: reservation.transport_mode,
+      arrival_location: reservation.arrival_location,
+      needs_transfer: reservation.needs_transfer,
       arrival_time: reservation.arrival_time,
       departure_time: reservation.departure_time,
       created_at: reservation.created_at,

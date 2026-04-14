@@ -2,9 +2,10 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { ActivityDetailPage } from '@/features/activites/ActivityDetailPage'
 import { sanityFetch, sanityFetchArray } from '@/lib/sanity/fetch'
-import { activityBySlugQuery, allActivitiesQuery } from '@/lib/sanity/queries'
+import { activityBySlugQuery, allActivitiesQuery, allEventsQuery } from '@/lib/sanity/queries'
 import { imageUrl } from '@/lib/sanity/image'
-import type { Activity } from '@/types'
+import type { Activity, Event } from '@/types'
+import { getActivityFallbackDate } from '@/lib/reservations/activityFallbackDates'
 
 export const revalidate = 60
 
@@ -82,7 +83,64 @@ function getStringValue(value: unknown, fallback = ''): string {
   return typeof value === 'string' && value.trim() ? value : fallback
 }
 
-function normalizeActivityForUi(activity: Activity) {
+function getEventStartDate(event: Event): string {
+  const raw = event as Event & {
+    dates?: { startDate?: unknown }
+    startDate?: unknown
+  }
+
+  const nestedStartDate = raw.dates?.startDate
+  if (typeof nestedStartDate === 'string' && nestedStartDate.trim()) {
+    return nestedStartDate.trim()
+  }
+
+  if (typeof raw.startDate === 'string' && raw.startDate.trim()) {
+    return raw.startDate.trim()
+  }
+
+  return ''
+}
+
+function findNextEventDateForActivity(activity: Activity, events: Event[]): string {
+  const activitySlug = getSlugValue(activity.slug).toLowerCase()
+  const activityTitle = getStringValue(activity.title).toLowerCase()
+  const now = new Date()
+
+  const candidates = events
+    .map((event) => {
+      const eventSlug = getSlugValue(event.slug).toLowerCase()
+      const eventTitle = getStringValue(event.title).toLowerCase()
+      const startDate = getEventStartDate(event)
+      const parsedDate = startDate ? new Date(startDate) : null
+
+      const matchesSlug = Boolean(activitySlug) && eventSlug.includes(activitySlug)
+      const matchesTitle = Boolean(activityTitle) && eventTitle.includes(activityTitle)
+
+      return {
+        startDate,
+        parsedDate,
+        matches: matchesSlug || matchesTitle,
+      }
+    })
+    .filter(
+      (item) =>
+        item.matches &&
+        item.startDate &&
+        item.parsedDate &&
+        !Number.isNaN(item.parsedDate.getTime()) &&
+        item.parsedDate >= now
+    )
+    .sort((a, b) => a.parsedDate!.getTime() - b.parsedDate!.getTime())
+
+  if (candidates.length > 0) return candidates[0].startDate
+
+  return getActivityFallbackDate({
+    slug: getSlugValue(activity.slug),
+    title: getStringValue(activity.title),
+  })
+}
+
+function normalizeActivityForUi(activity: Activity, events: Event[] = []) {
   const raw = activity as Activity & {
     owner?: unknown
     content?: unknown
@@ -110,6 +168,7 @@ function normalizeActivityForUi(activity: Activity) {
     imageUrl: raw.coverImage
       ? imageUrl(raw.coverImage, 1600, 900) || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80'
       : 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80',
+    nextEventDate: findNextEventDateForActivity(activity, events),
   }
 }
 
@@ -148,17 +207,18 @@ export default async function ActivityPage(
 ) {
   const { slug } = await params
 
-  const [activity, allActivities] = await Promise.all([
+  const [activity, allActivities, allEvents] = await Promise.all([
     sanityFetch<Activity>(activityBySlugQuery, { slug }),
     sanityFetchArray<Activity>(allActivitiesQuery),
+    sanityFetchArray<Event>(allEventsQuery),
   ])
 
   if (!activity) {
     notFound()
   }
 
-  const normalizedActivity = normalizeActivityForUi(activity)
-  const normalizedActivities = allActivities.map(normalizeActivityForUi)
+  const normalizedActivity = normalizeActivityForUi(activity, allEvents)
+  const normalizedActivities = allActivities.map((item) => normalizeActivityForUi(item, allEvents))
 
   return (
     <ActivityDetailPage

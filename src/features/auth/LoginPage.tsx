@@ -25,6 +25,11 @@ export function LoginPage() {
   const [error, setError] = useState('')
   const [visible, setVisible] = useState(true)
 
+  const callbackUrl = searchParams.get('callbackUrl') || ''
+  const signupHref = callbackUrl
+    ? `/inscription?callbackUrl=${encodeURIComponent(callbackUrl)}`
+    : '/inscription'
+
   useEffect(() => {
     setVisible(true)
   }, [])
@@ -32,11 +37,15 @@ export function LoginPage() {
   useEffect(() => {
     if (isLoading || !user) return
 
-    const callbackUrl = searchParams.get('callbackUrl')
-    const target = isAdmin ? '/admin' : callbackUrl || '/espace-membre'
+    const safeCallbackUrl =
+      callbackUrl && callbackUrl.startsWith('/')
+        ? callbackUrl
+        : '/espace-membre'
+
+    const target = isAdmin ? '/admin' : safeCallbackUrl
 
     router.replace(target)
-  }, [isLoading, user, isAdmin, router, searchParams])
+  }, [isLoading, user, isAdmin, router, callbackUrl])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -157,7 +166,7 @@ export function LoginPage() {
             <p className="text-sm font-sans text-[#7A6355]">
               Pas encore de compte ?{' '}
               <Link
-                href="/inscription"
+                href={signupHref}
                 className="text-[#C8912A] hover:text-[#5C3D2E] font-medium transition-colors"
               >
                 Créer mon espace

@@ -37,6 +37,9 @@ type ReservationParticipant = {
   diet_notes: string | null
   logistics_notes: string | null
   accommodation_type: string | null
+  transport_mode: string | null
+  arrival_location: string | null
+  needs_transfer: boolean
   arrival_time: string | null
   departure_time: string | null
   created_at: string
@@ -110,6 +113,21 @@ function formatAccommodation(value: string | null | undefined) {
       return 'Chambre individuelle'
     case 'external':
       return 'Hébergement externe'
+    default:
+      return '—'
+  }
+}
+
+function formatTransportMode(value: string | null | undefined) {
+  switch (value) {
+    case 'train':
+      return 'Train'
+    case 'avion':
+      return 'Avion'
+    case 'voiture':
+      return 'Voiture'
+    case 'bus':
+      return 'Bus'
     default:
       return '—'
   }
@@ -547,6 +565,18 @@ export function AdminReservationGroupsPage() {
                                   <div>
                                     <p className="text-xs uppercase tracking-wider text-[#7A6355] mb-1">Hébergement</p>
                                     <p className="text-[#2D1F14]">{formatAccommodation(participant.accommodation_type)}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs uppercase tracking-wider text-[#7A6355] mb-1">Transport</p>
+                                    <p className="text-[#2D1F14]">{formatTransportMode(participant.transport_mode)}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs uppercase tracking-wider text-[#7A6355] mb-1">Lieu d’arrivée</p>
+                                    <p className="text-[#2D1F14]">{participant.arrival_location || '—'}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs uppercase tracking-wider text-[#7A6355] mb-1">Navette</p>
+                                    <p className="text-[#2D1F14]">{participant.needs_transfer ? 'Oui' : 'Non'}</p>
                                   </div>
                                   <div>
                                     <p className="text-xs uppercase tracking-wider text-[#7A6355] mb-1">Arrivée</p>

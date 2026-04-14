@@ -249,3 +249,81 @@ export async function sendEmail(params: {
     replyTo: params.replyTo,
   })
 }
+
+
+export async function sendReservationPracticalEmail(params: {
+  to: string
+  firstName?: string | null
+  eventTitle: string
+  eventDate: string
+}) {
+  const resend = getResend()
+  const { to, firstName, eventTitle, eventDate } = params
+
+  const greeting = firstName?.trim() ? `Bonjour ${firstName},` : 'Bonjour,'
+
+  const content = `
+    <h1 style="font-family:Georgia,serif;font-size:24px;color:#5C3D2E;margin:0 0 16px;">
+      Votre demande de réservation a bien été enregistrée
+    </h1>
+    <p style="font-family:Arial,sans-serif;font-size:15px;color:#2D1F14;line-height:1.7;margin:0 0 16px;">${greeting}</p>
+    <p style="font-family:Arial,sans-serif;font-size:15px;color:#2D1F14;line-height:1.7;margin:0 0 16px;">
+      Nous avons bien reçu votre demande pour <strong>${eventTitle}</strong> prévu le <strong>${eventDate}</strong>.
+    </p>
+    <p style="font-family:Arial,sans-serif;font-size:15px;color:#2D1F14;line-height:1.7;margin:0 0 24px;">
+      Pour vous aider à préparer votre venue, voici les informations utiles concernant l’accès aux Ateliers de la Source.
+    </p>
+
+    <div style="background-color:#FAF6EF;border:1px solid #D4C4A8;border-radius:2px;padding:20px;margin:0 0 24px;">
+      <p style="margin:0 0 12px;font-family:Arial,sans-serif;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#7A6355;">Infos pratiques</p>
+      <p style="margin:0 0 12px;font-family:Arial,sans-serif;font-size:14px;color:#2D1F14;line-height:1.8;">
+        <strong>Adresse :</strong> 977 chemin de Betbèze, 65230 Thermes-Magnoac, France
+      </p>
+      <p style="margin:0 0 12px;font-family:Arial,sans-serif;font-size:14px;color:#2D1F14;line-height:1.8;">
+        <strong>En voiture :</strong> vous pouvez entrer directement cette adresse dans votre GPS.
+      </p>
+      <p style="margin:0 0 12px;font-family:Arial,sans-serif;font-size:14px;color:#2D1F14;line-height:1.8;">
+        <strong>En train :</strong> prendre un billet jusqu’à <strong>Toulouse Matabiau</strong>, puis le bus jusqu’à <strong>Boulogne-sur-Gesse</strong> (terminus). Le trajet en bus dure environ <strong>2h15</strong>.
+      </p>
+      <p style="margin:0 0 12px;font-family:Arial,sans-serif;font-size:14px;color:#2D1F14;line-height:1.8;">
+        <strong>En avion :</strong> arrivée à <strong>Toulouse Blagnac</strong>, puis rejoindre <strong>Toulouse Matabiau</strong> avant de prendre le bus jusqu’à <strong>Boulogne-sur-Gesse</strong>.
+      </p>
+      <p style="margin:0 0 12px;font-family:Arial,sans-serif;font-size:14px;color:#2D1F14;line-height:1.8;">
+        <strong>Transport local :</strong> réseau Tisséo, liO ligne 365, taxi ou VTC selon votre organisation.
+      </p>
+      <p style="margin:0 0 12px;font-family:Arial,sans-serif;font-size:14px;color:#2D1F14;line-height:1.8;">
+        <strong>Navette / accueil :</strong> merci de nous communiquer votre heure d’arrivée à Boulogne-sur-Gesse si vous arrivez en transport collectif. Nous pourrons venir vous chercher, les Ateliers étant à environ 5 minutes.
+      </p>
+      <p style="margin:0 0 12px;font-family:Arial,sans-serif;font-size:14px;color:#2D1F14;line-height:1.8;">
+        <strong>Option confort :</strong> taxi Toulouse → Thermes-Magnoac (environ 140 à 200€), ou possibilité que nous venions vous chercher à Toulouse selon disponibilité et défraiement à convenir.
+      </p>
+      <p style="margin:0;font-family:Arial,sans-serif;font-size:14px;color:#2D1F14;line-height:1.8;">
+        <strong>Téléphone gare routière Pierre Sémard :</strong> 36 35
+      </p>
+    </div>
+
+    <div style="background-color:#FFF8E8;border:1px solid #E8D8B8;border-radius:2px;padding:20px;margin:0 0 24px;">
+      <p style="margin:0 0 10px;font-family:Arial,sans-serif;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#7A6355;">Contact coordination</p>
+      <p style="margin:0;font-family:Arial,sans-serif;font-size:14px;color:#2D1F14;line-height:1.8;">
+        Café culturel "La Source"<br />
+        Mr Gabriel Boé<br />
+        Tél. : 0033 (0)7 68 97 25 03<br />
+        Mail : gabrielboe.lasource@gmail.com
+      </p>
+    </div>
+
+    <p style="font-family:Arial,sans-serif;font-size:15px;color:#2D1F14;line-height:1.7;margin:0 0 6px;">
+      Au plaisir de vous accueillir,
+    </p>
+    <p style="font-family:Arial,sans-serif;font-size:15px;color:#5C3D2E;line-height:1.7;margin:0;font-weight:600;">
+      Gabriel & Amélie
+    </p>
+  `
+
+  return resend.emails.send({
+    from: FROM_EMAIL,
+    to,
+    subject: `Infos pratiques — ${eventTitle}`,
+    html: baseTemplate(content),
+  })
+}

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { MapPin, ArrowRight } from 'lucide-react'
+import { buildReservationHref } from '@/lib/reservations/buildReservationHref'
 
 function useFadeIn(delay = 0) {
   const ref = useRef<HTMLDivElement>(null)
@@ -33,6 +34,7 @@ const placeholderEvents: HomeEvent[] = [
 ]
 
 const MONTHS_FR = ['jan', 'fév', 'mar', 'avr', 'mai', 'jun', 'jul', 'aoû', 'sep', 'oct', 'nov', 'déc']
+
 
 function isValidDate(value?: string) {
   if (!value) return false
@@ -66,14 +68,28 @@ function EventCard({ event, index }: { event: HomeEvent; index: number }) {
               <h3 className="mt-1.5 font-serif text-lg text-[#5C3D2E] group-hover:text-[#C8912A] leading-snug transition-colors duration-200">{event.title}</h3>
             </div>
           </div>
-          <div className="mt-auto px-5 py-3 border-t border-[#D4C4A8]/50 flex items-center justify-between gap-2">
+          <div className="mt-auto px-5 py-3 border-t border-[#D4C4A8]/50 flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-1.5 text-xs font-sans text-[#7A6355]">
               <MapPin size={12} className="flex-shrink-0" />
               <span className="truncate">{locationLabel}</span>
             </div>
-            <div className="flex items-center gap-1 text-xs font-sans text-[#C8912A] font-medium whitespace-nowrap">
-              Voir le détail
-              <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform duration-200" />
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1 text-xs font-sans text-[#C8912A] font-medium whitespace-nowrap">
+                Voir le détail
+                <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform duration-200" />
+              </div>
+              <span
+                onClick={(e) => e.preventDefault()}
+                onMouseDown={(e) => e.stopPropagation()}
+                className="relative z-10"
+              >
+                <Link
+                  href={buildReservationHref({ eventTitle: event.title, eventSlug: event.slug, eventType: event.type, eventDate: event.startDate || null })}
+                  className="inline-flex items-center justify-center rounded-sm border border-[#5C3D2E] px-3 py-2 text-[11px] font-sans font-medium uppercase tracking-widest text-[#5C3D2E] transition-all duration-200 hover:bg-[#5C3D2E] hover:text-[#F5EDD8]"
+                >
+                  Réserver
+                </Link>
+              </span>
             </div>
           </div>
         </div>

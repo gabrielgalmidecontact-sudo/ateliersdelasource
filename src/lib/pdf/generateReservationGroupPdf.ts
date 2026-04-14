@@ -17,6 +17,9 @@ export type ReservationGroupParticipant = {
   diet_notes: string | null
   logistics_notes: string | null
   accommodation_type: string | null
+  transport_mode: string | null
+  arrival_location: string | null
+  needs_transfer: boolean
   arrival_time: string | null
   departure_time: string | null
   created_at: string
@@ -81,6 +84,21 @@ function formatAccommodation(value: string | null | undefined) {
       return 'Chambre individuelle'
     case 'external':
       return 'Hébergement externe'
+    default:
+      return '—'
+  }
+}
+
+function formatTransportMode(value: string | null | undefined) {
+  switch (value) {
+    case 'train':
+      return 'Train'
+    case 'avion':
+      return 'Avion'
+    case 'voiture':
+      return 'Voiture'
+    case 'bus':
+      return 'Bus'
     default:
       return '—'
   }
@@ -270,15 +288,34 @@ export async function generateReservationGroupPdf(data: ReservationGroupPdfData)
 
   data.participants.forEach((participant, index) => {
     const notesParts = [
-      participant.diet_notes ? `Précisions alimentaires : ${participant.diet_notes}` : '',
       participant.logistics_notes ? `Logistique : ${participant.logistics_notes}` : '',
       participant.notes ? `Remarque réservation : ${participant.notes}` : '',
     ].filter(Boolean)
 
     const notesText = notesParts.join('\n')
+    const foodDetails = [
+      participant.diet_type ? `Régime : ${formatDietType(participant.diet_type)}` : '',
+      participant.food_allergies ? `Allergies : ${participant.food_allergies}` : '',
+      participant.food_intolerances ? `Intolérances : ${participant.food_intolerances}` : '',
+      participant.diet_notes ? `Précisions alimentaires : ${participant.diet_notes}` : '',
+    ].filter(Boolean).join('\n')
+    const logisticsDetails = [
+      `Transport : ${formatTransportMode(participant.transport_mode)}`,
+      `Lieu d’arrivée : ${participant.arrival_location || '—'}`,
+      `Navette : ${participant.needs_transfer ? 'Oui' : 'Non'}`,
+      `Heure d’arrivée : ${participant.arrival_time || '—'}`,
+      `Heure de départ : ${participant.departure_time || '—'}`,
+    ].join('\n')
+
     const noteLines = notesText ? doc.splitTextToSize(notesText, CONTENT_W - 16) : []
+    const foodLines = foodDetails ? doc.splitTextToSize(foodDetails, CONTENT_W / 2 - 14) : []
+    const logisticsLines = doc.splitTextToSize(logisticsDetails, CONTENT_W / 2 - 14)
+    const infoBlockHeight = Math.max(
+      foodLines.length > 0 ? foodLines.length * 4.2 + 8 : 0,
+      logisticsLines.length * 4.2 + 8
+    )
     const noteBlockHeight = noteLines.length > 0 ? Math.max(14, noteLines.length * 4.5 + 6) : 0
-    const cardHeight = 44 + noteBlockHeight
+    const cardHeight = 52 + infoBlockHeight + noteBlockHeight
 
     checkPageBreak(cardHeight + 6)
 
@@ -312,37 +349,33 @@ export async function generateReservationGroupPdf(data: ReservationGroupPdfData)
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(7)
 
-    doc.text('RÉGIME', col1, top)
-    doc.text('ALLERGIES', col2, top)
-    doc.text('INTOLÉRANCES', col3, top)
+    const boxY = y + 24
+    const boxW = (CONTENT_W - 15) / 2
 
-    setText(COLORS.text)
+    setFill(COLORS.softGreen)
+    setDraw(COLORS.border)
+    doc.roundedRect(MARGIN + 5, boxY, boxW, infoBlockHeight, 1, 1, 'FD')
+    setText(COLORS.green)
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(9)
-    doc.text(formatDietType(participant.diet_type), col1, top + 6)
-    doc.text(participant.food_allergies || '—', col2, top + 6)
-    doc.text(participant.food_intolerances || '—', col3, top + 6)
+    doc.setFontSize(8)
+    doc.text('BLOC ALIMENTAIRE', MARGIN + 9, boxY + 6)
+    multiLineText(foodDetails || '—', MARGIN + 9, boxY + 12, boxW - 8, 8.5, COLORS.text, 'normal', 12)
 
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(7)
-    setText(COLORS.lightBrown)
-    doc.text('HÉBERGEMENT', col1, top + 14)
-    doc.text('ARRIVÉE', col2, top + 14)
-    doc.text('DÉPART', col3, top + 14)
-
-    setText(COLORS.text)
+    setFill(COLORS.softGold)
+    setDraw(COLORS.border)
+    doc.roundedRect(MARGIN + 10 + boxW, boxY, boxW, infoBlockHeight, 1, 1, 'FD')
+    setText(COLORS.gold)
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(9)
-    doc.text(formatAccommodation(participant.accommodation_type), col1, top + 20)
-    doc.text(participant.arrival_time || '—', col2, top + 20)
-    doc.text(participant.departure_time || '—', col3, top + 20)
+    doc.setFontSize(8)
+    doc.text('BLOC LOGISTIQUE', MARGIN + 14 + boxW, boxY + 6)
+    multiLineText(logisticsDetails, MARGIN + 14 + boxW, boxY + 12, boxW - 8, 8.5, COLORS.text, 'normal', 12)
 
+    const noteBoxY = boxY + infoBlockHeight + 4
     if (noteLines.length > 0) {
-      const boxY = y + 44
       setFill(COLORS.creamDark)
       setDraw(COLORS.border)
-      doc.roundedRect(MARGIN + 5, boxY, CONTENT_W - 10, noteBlockHeight, 1, 1, 'FD')
-      multiLineText(notesText, MARGIN + 9, boxY + 6, CONTENT_W - 18, 8.5, COLORS.midBrown, 'normal', 10)
+      doc.roundedRect(MARGIN + 5, noteBoxY, CONTENT_W - 10, noteBlockHeight, 1, 1, 'FD')
+      multiLineText(notesText, MARGIN + 9, noteBoxY + 6, CONTENT_W - 18, 8.5, COLORS.midBrown, 'normal', 10)
     }
 
     y += cardHeight + 6

@@ -90,6 +90,9 @@ export interface Reservation {
   diet_notes: string | null
   logistics_notes: string | null
   accommodation_type: string | null
+  transport_mode: 'train' | 'avion' | 'voiture' | 'bus' | null
+  arrival_location: string | null
+  needs_transfer: boolean
   arrival_time: string | null
   departure_time: string | null
   created_at: string

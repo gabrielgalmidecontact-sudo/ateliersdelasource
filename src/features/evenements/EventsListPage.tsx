@@ -7,6 +7,7 @@ import { Container } from '@/components/ui/Container'
 import { Badge } from '@/components/ui/Badge'
 import type { Event } from '@/types'
 import { imageUrl } from '@/lib/sanity/image'
+import { buildReservationHref } from '@/lib/reservations/buildReservationHref'
 
 const MONTHS_SHORT = ['jan', 'fév', 'mar', 'avr', 'mai', 'jun', 'jul', 'aoû', 'sep', 'oct', 'nov', 'déc']
 const EVENT_FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80'
@@ -67,6 +68,7 @@ const typeColors: Record<string, 'ocre' | 'vert' | 'brun' | 'ghost'> = {
   Spectacle: 'vert',
   Formation: 'ghost',
 }
+
 
 function hasValidDate(value?: string) {
   if (!value) return false
@@ -154,10 +156,27 @@ function EventCard({ event, index }: { event: DisplayEvent; index: number }) {
                   </span>
                 )}
               </div>
-              <span className="flex items-center gap-1 text-xs font-sans font-medium text-[#C8912A]">
-                Détails
-                <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform duration-200" />
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="flex items-center gap-1 text-xs font-sans font-medium text-[#C8912A]">
+                  Détails
+                  <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform duration-200" />
+                </span>
+
+                {!isPast && (
+                  <span
+                    onClick={(e) => e.preventDefault()}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    className="relative z-10"
+                  >
+                    <Link
+                      href={buildReservationHref({ eventTitle: event.title, eventSlug: event.slug, eventType: event.type, eventDate: event.startDate })}
+                      className="inline-flex items-center justify-center rounded-sm border border-[#5C3D2E] px-3 py-2 text-[11px] font-sans font-medium uppercase tracking-widest text-[#5C3D2E] transition-all duration-200 hover:bg-[#5C3D2E] hover:text-[#F5EDD8]"
+                    >
+                      Réserver
+                    </Link>
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </article>

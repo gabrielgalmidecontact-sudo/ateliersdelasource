@@ -45,3 +45,7 @@ backups/
 *.bak
 *.phase4.bak
 .env.local
+
+# backups
+*.bak
+*.before-*

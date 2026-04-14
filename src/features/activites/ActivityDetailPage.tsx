@@ -6,6 +6,7 @@ import { Clock, Users, MapPin, Tag, ArrowLeft, ArrowRight, Mail } from 'lucide-r
 import { Container } from '@/components/ui/Container'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
+import { buildReservationHref } from '@/lib/reservations/buildReservationHref'
 
 interface ActivityData {
   code: string
@@ -20,8 +21,11 @@ interface ActivityData {
   location: string
   type: string
   imageUrl: string
+  nextEventDate?: string
   placeholder?: boolean
 }
+
+
 
 function formatContent(text: string) {
   if (!text.trim()) {
@@ -155,7 +159,11 @@ export function ActivityDetailPage({
                   Contactez {activity.owner.name} directement pour obtenir toutes les informations, connaître les prochaines dates ou vous inscrire.
                 </p>
                 <div className="flex flex-wrap gap-3">
-                  <Button href="/contact" variant="primary" size="md">
+                  <Button href={buildReservationHref({ eventTitle: activity.title, eventSlug: activity.slug, eventType: activity.type, eventDate: activity.nextEventDate || null })} variant="primary" size="md">
+                    Réserver
+                    <ArrowRight size={16} />
+                  </Button>
+                  <Button href="/contact" variant="outline" size="md">
                     <Mail size={16} />
                     Envoyer un message
                   </Button>

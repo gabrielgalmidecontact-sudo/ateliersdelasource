@@ -6,6 +6,7 @@ import { Calendar, MapPin, Users, Tag, ArrowLeft, Mail } from 'lucide-react'
 import { Container } from '@/components/ui/Container'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
+import { buildReservationHref } from '@/lib/reservations/buildReservationHref'
 
 const MONTHS_FR = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
 
@@ -25,6 +26,8 @@ interface EventData {
   imageUrl: string
 }
 
+
+
 function formatContent(text: string) {
   const safeText = typeof text === 'string' ? text.trim() : ''
   if (!safeText) {
@@ -43,6 +46,11 @@ function formatContent(text: string) {
 function isValidDate(value?: string) {
   if (!value) return false
   return !Number.isNaN(new Date(value).getTime())
+}
+
+function toDateInputValue(value?: string) {
+  if (!isValidDate(value)) return ''
+  return new Date(value as string).toISOString().slice(0, 10)
 }
 
 function formatDate(value?: string) {
@@ -142,26 +150,25 @@ export function EventDetailPage({ event }: { event: EventData }) {
               <div>{formatContent(event.description)}</div>
 
               <div className="mt-12 p-8 bg-[#F5EDD8] rounded-sm border border-[#D4C4A8]">
-                {event.registrationEnabled ? (
-                  <>
-                    <h2 className="font-serif text-xl text-[#5C3D2E] mb-2">S&apos;inscrire</h2>
-                    <p className="text-sm font-sans text-[#7A6355] mb-5">
-                      Les inscriptions sont ouvertes. Réservez votre place dès maintenant.
-                    </p>
-                    <Button variant="secondary" size="md">Réserver ma place</Button>
-                  </>
-                ) : (
-                  <>
-                    <h2 className="font-serif text-xl text-[#5C3D2E] mb-2">Intéressé·e ?</h2>
-                    <p className="text-sm font-sans text-[#7A6355] mb-5">
-                      Pour vous inscrire ou obtenir plus d&apos;informations, contactez {ownerName} directement.
-                    </p>
-                    <Button href="/contact" variant="primary" size="md">
-                      <Mail size={16} />
-                      Contacter {ownerName}
-                    </Button>
-                  </>
-                )}
+                <h2 className="font-serif text-xl text-[#5C3D2E] mb-2">
+                  {event.registrationEnabled ? "S&apos;inscrire" : "Réserver ou en savoir plus"}
+                </h2>
+                <p className="text-sm font-sans text-[#7A6355] mb-5">
+                  {event.registrationEnabled
+                    ? "Les inscriptions sont ouvertes. Réservez votre place dès maintenant."
+                    : `Vous pouvez déjà faire une demande de réservation ou contacter ${ownerName} pour obtenir plus d’informations.`}
+                </p>
+
+                <div className="flex flex-wrap gap-3">
+                  <Button href={buildReservationHref({ eventTitle: event.title, eventSlug: event.slug, eventType: event.type, eventDate: event.startDate })} variant="secondary" size="md">
+                    Réserver ma place
+                  </Button>
+
+                  <Button href="/contact" variant="outline" size="md">
+                    <Mail size={16} />
+                    Contacter {ownerName}
+                  </Button>
+                </div>
               </div>
             </div>
 

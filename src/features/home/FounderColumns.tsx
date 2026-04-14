@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
+import { buildReservationHref } from '@/lib/reservations/buildReservationHref'
 
 function useFadeIn() {
   const ref = useRef<HTMLDivElement>(null)
@@ -20,6 +21,7 @@ type FounderActivity = {
   title: string
   slug: string
   excerpt: string
+  nextEventDate?: string
 }
 
 type FounderPerson = {
@@ -37,11 +39,11 @@ const defaultGabriel: FounderPerson = {
   bio: "Comédien et animateur de stages de développement personnel, Gabriel vous accompagne dans une exploration de vous-même à travers le théâtre, la biographie et l'expression. Un chemin humain, créatif et profond.",
   imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80',
   activities: [
-    { code: 'A1', title: 'Théâtre des Doubles Karmiques', slug: 'theatre-doubles-karmiques', excerpt: 'Stage de développement personnel sur 3 jours et demi en petit groupe.' },
-    { code: 'A2', title: 'Entretien Biographique', slug: 'entretien-biographique', excerpt: "Entretiens d'une heure pour explorer le sens et les rythmes de votre vie." },
-    { code: 'A3', title: "Atelier d'Expression Parlée et Corporelle", slug: 'atelier-expression-parlee-corporelle', excerpt: 'Gagner en aisance verbale et corporelle, séance par séance.' },
-    { code: 'A4', title: 'Rêves à 100 000 euros', slug: 'reves-100000-euros', excerpt: 'Un seul en scène semi-improvisé, interactif et touchant — 1h30 au chapeau.' },
-    { code: 'A5', title: 'La Vision de Dante de Victor Hugo', slug: 'vision-dante-victor-hugo', excerpt: 'Récitation poétique accompagnée de violoncelle ou piano — 1h30 au chapeau.' },
+    { code: 'A1', title: 'Théâtre des Doubles Karmiques', slug: 'theatre-doubles-karmiques', excerpt: 'Stage de développement personnel sur 3 jours et demi en petit groupe.', nextEventDate: '2025-06-06' },
+    { code: 'A2', title: 'Entretien Biographique', slug: 'entretien-biographique', excerpt: "Entretiens d'une heure pour explorer le sens et les rythmes de votre vie.", nextEventDate: '2025-06-15' },
+    { code: 'A3', title: "Atelier d'Expression Parlée et Corporelle", slug: 'atelier-expression-parlee-corporelle', excerpt: 'Gagner en aisance verbale et corporelle, séance par séance.', nextEventDate: '2025-06-20' },
+    { code: 'A4', title: 'Rêves à 100 000 euros', slug: 'reves-100000-euros', excerpt: 'Un seul en scène semi-improvisé, interactif et touchant — 1h30 au chapeau.', nextEventDate: '2025-07-12' },
+    { code: 'A5', title: 'La Vision de Dante de Victor Hugo', slug: 'vision-dante-victor-hugo', excerpt: 'Récitation poétique accompagnée de violoncelle ou piano — 1h30 au chapeau.', nextEventDate: '2025-07-19' },
   ],
 }
 
@@ -58,22 +60,32 @@ const defaultAmelie: FounderPerson = {
   isPlaceholder: true,
 }
 
-function ActivityLink({ code, title, slug, excerpt }: FounderActivity) {
+
+function ActivityLink({ code, title, slug, excerpt, nextEventDate }: FounderActivity) {
   return (
-    <Link href={`/activites/${slug}`} className="group block py-4 border-b border-[#D4C4A8]/50 hover:border-[#C8912A]/50 transition-colors duration-200">
+    <div className="group block py-4 border-b border-[#D4C4A8]/50 hover:border-[#C8912A]/50 transition-colors duration-200">
       <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-3">
+        <Link href={`/activites/${slug}`} className="flex items-start gap-3 min-w-0 flex-1">
           <span className="flex-shrink-0 mt-0.5 text-xs font-sans font-medium tracking-widest text-[#C8912A] uppercase bg-[#C8912A]/10 px-2 py-0.5 rounded-sm">
             {code}
           </span>
-          <div>
+          <div className="min-w-0">
             <h3 className="text-base font-serif text-[#5C3D2E] group-hover:text-[#C8912A] transition-colors duration-200 leading-snug">{title}</h3>
             <p className="mt-1 text-sm font-sans text-[#7A6355] leading-relaxed line-clamp-2">{excerpt}</p>
           </div>
+        </Link>
+
+        <div className="flex items-start gap-3 flex-shrink-0">
+          <Link
+            href={buildReservationHref({ eventTitle: title, eventSlug: slug, eventType: 'Activité', eventDate: nextEventDate || null })}
+            className="inline-flex items-center justify-center rounded-sm border border-[#5C3D2E] px-3 py-2 text-[11px] font-sans font-medium uppercase tracking-widest text-[#5C3D2E] transition-all duration-200 hover:bg-[#5C3D2E] hover:text-[#F5EDD8]"
+          >
+            Réserver
+          </Link>
+          <ArrowRight size={16} className="flex-shrink-0 mt-1 text-[#D4C4A8] group-hover:text-[#C8912A] group-hover:translate-x-1 transition-all duration-200" />
         </div>
-        <ArrowRight size={16} className="flex-shrink-0 mt-1 text-[#D4C4A8] group-hover:text-[#C8912A] group-hover:translate-x-1 transition-all duration-200" />
       </div>
-    </Link>
+    </div>
   )
 }
 

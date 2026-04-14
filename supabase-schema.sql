@@ -131,6 +131,17 @@ create table if not exists public.reservations (
   amount_cents integer,
   stripe_session_id text,
   notes text,
+  diet_type text,
+  food_allergies text,
+  food_intolerances text,
+  diet_notes text,
+  logistics_notes text,
+  accommodation_type text,
+  transport_mode text check (transport_mode in ('train', 'avion', 'voiture', 'bus')),
+  arrival_location text,
+  needs_transfer boolean not null default false,
+  arrival_time text,
+  departure_time text,
   created_at timestamptz not null default now()
 );
 

@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/Badge'
 import { Section } from '@/components/ui/Section'
 import type { Activity } from '@/types'
 import { imageUrl } from '@/lib/sanity/image'
+import { buildReservationHref } from '@/lib/reservations/buildReservationHref'
+import { getActivityFallbackDate } from '@/lib/reservations/activityFallbackDates'
 
 function useFade(delay = 0) {
   const ref = useRef<HTMLDivElement>(null)
@@ -51,15 +53,16 @@ type DisplayActivity = {
   participants: string
   type: string
   imageUrl: string
+  nextEventDate?: string
   placeholder?: boolean
 }
 
 const STATIC_ACTIVITIES: DisplayActivity[] = [
-  { code: 'A1', title: 'Théâtre des Doubles Karmiques', slug: 'theatre-doubles-karmiques', owner: 'Gabriel', excerpt: "Avec un groupe de 4 à 5 personnes, Gabriel vous accompagne dans une immersion profonde au cœur de vous-même. Un processus collectif, conscient et créatif pour désamorcer les mécanismes répétitifs.", duration: '3 jours et demi', participants: '4 à 5 personnes', type: 'Stage', imageUrl: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=800&q=80' },
-  { code: 'A2', title: 'Entretien Biographique', slug: 'entretien-biographique', owner: 'Gabriel', excerpt: "Formé pendant 3 ans à la biographie avec Cyr Boé, Gabriel vous propose des entretiens d'une heure pour explorer le sens de votre vie et découvrir les rythmes qui la traversent.", duration: '1 heure', participants: 'Individuel', type: 'Accompagnement', imageUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&q=80' },
-  { code: 'A3', title: "Atelier d'Expression Parlée et Corporelle", slug: 'atelier-expression-parlee-corporelle', owner: 'Gabriel', excerpt: "Gagner en aisance corporelle et verbale pour un oral, une audition, un entretien… ou simplement pour retrouver une manière d'être plus libre et plus tranquille au quotidien.", duration: '1 heure', participants: 'Individuel', type: 'Atelier', imageUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&q=80' },
-  { code: 'A4', title: 'Rêves à 100 000 euros', slug: 'reves-100000-euros', owner: 'Gabriel (Galmide)', excerpt: "Un seul en scène semi-improvisé où Galmide raconte 7 années de vie rocambolesque — déjantée, délurée, touchante et absolument vraie. Le public participe. Au chapeau.", duration: '1h30', participants: 'Tous publics', type: 'Spectacle', imageUrl: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80' },
-  { code: 'A5', title: 'La Vision de Dante de Victor Hugo', slug: 'vision-dante-victor-hugo', owner: 'Gabriel (Galmide)', excerpt: "Immersion poétique à travers l'œuvre magistrale de Victor Hugo, portée par Galmide et accompagnée d'une violoncelliste ou pianiste. 1h30. Jouable dans vos salons. Au chapeau.", duration: '1h30', participants: 'Tous publics', type: 'Spectacle', imageUrl: 'https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=800&q=80' },
+  { code: 'A1', title: 'Théâtre des Doubles Karmiques', slug: 'theatre-doubles-karmiques', owner: 'Gabriel', excerpt: "Avec un groupe de 4 à 5 personnes, Gabriel vous accompagne dans une immersion profonde au cœur de vous-même. Un processus collectif, conscient et créatif pour désamorcer les mécanismes répétitifs.", duration: '3 jours et demi', participants: '4 à 5 personnes', type: 'Stage', nextEventDate: '2025-06-06', imageUrl: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=800&q=80' },
+  { code: 'A2', title: 'Entretien Biographique', slug: 'entretien-biographique', owner: 'Gabriel', excerpt: "Formé pendant 3 ans à la biographie avec Cyr Boé, Gabriel vous propose des entretiens d'une heure pour explorer le sens de votre vie et découvrir les rythmes qui la traversent.", duration: '1 heure', participants: 'Individuel', type: 'Accompagnement', nextEventDate: '2025-06-15', imageUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&q=80' },
+  { code: 'A3', title: "Atelier d'Expression Parlée et Corporelle", slug: 'atelier-expression-parlee-corporelle', owner: 'Gabriel', excerpt: "Gagner en aisance corporelle et verbale pour un oral, une audition, un entretien… ou simplement pour retrouver une manière d'être plus libre et plus tranquille au quotidien.", duration: '1 heure', participants: 'Individuel', type: 'Atelier', nextEventDate: '2025-06-20', imageUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&q=80' },
+  { code: 'A4', title: 'Rêves à 100 000 euros', slug: 'reves-100000-euros', owner: 'Gabriel (Galmide)', excerpt: "Un seul en scène semi-improvisé où Galmide raconte 7 années de vie rocambolesque — déjantée, délurée, touchante et absolument vraie. Le public participe. Au chapeau.", duration: '1h30', participants: 'Tous publics', type: 'Spectacle', nextEventDate: '2025-07-12', imageUrl: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=800&q=80' },
+  { code: 'A5', title: 'La Vision de Dante de Victor Hugo', slug: 'vision-dante-victor-hugo', owner: 'Gabriel (Galmide)', excerpt: "Immersion poétique à travers l'œuvre magistrale de Victor Hugo, portée par Galmide et accompagnée d'une violoncelliste ou pianiste. 1h30. Jouable dans vos salons. Au chapeau.", duration: '1h30', participants: 'Tous publics', type: 'Spectacle', nextEventDate: '2025-07-19', imageUrl: 'https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=800&q=80' },
   { code: 'A6', title: 'Massages & Soins', slug: 'massages-soins', owner: 'Amélie', excerpt: "Amélie vous accueille dans son espace de soins corporels. Détails et horaires à venir dès l'ouverture de sa salle.", duration: 'À définir', participants: 'Individuel', type: 'Soin', imageUrl: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800&q=80', placeholder: true },
   { code: 'A7', title: 'Hébergement sur le lieu', slug: 'hebergement', owner: 'Amélie', excerpt: "Informations pour réserver une nuit ou un séjour sur le lieu. Contenu à venir prochainement.", duration: 'Variable', participants: 'À définir', type: 'Hébergement', imageUrl: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&q=80', placeholder: true },
   { code: 'A8', title: 'Venir sur le lieu', slug: 'venir-sur-le-lieu', owner: 'Amélie', excerpt: "Accès, itinéraire et informations pratiques pour rejoindre les Ateliers de la Source. Contenu à venir.", duration: '—', participants: '—', type: 'Informations', imageUrl: 'https://images.unsplash.com/photo-1452421822248-d4c2b47f0c81?w=800&q=80', placeholder: true },
@@ -109,6 +112,7 @@ function getTypeFromOwner(ownerName: string): string {
   return 'Activité'
 }
 
+
 function normalizeSanityActivity(activity: Activity): DisplayActivity {
   const ownerName = getOwnerName(activity.owner)
   const slug =
@@ -128,6 +132,10 @@ function normalizeSanityActivity(activity: Activity): DisplayActivity {
     imageUrl: activity.coverImage
       ? imageUrl(activity.coverImage, 800, 600) || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80'
       : 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80',
+    nextEventDate: getActivityFallbackDate({
+      slug,
+      title: getStringValue(activity.title, 'Activité'),
+    }),
   }
 }
 
@@ -187,9 +195,24 @@ function ActivityCard({ activity, delay = 0 }: { activity: DisplayActivity; dela
               </span>
             </div>
 
-            <div className="mt-4 flex items-center gap-1 text-sm font-sans font-medium text-[#5C3D2E] group-hover:text-[#C8912A] transition-colors duration-200">
-              En savoir plus
-              <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform duration-200" />
+            <div className="mt-4 flex items-center justify-between gap-3">
+              <span className="flex items-center gap-1 text-sm font-sans font-medium text-[#5C3D2E] group-hover:text-[#C8912A] transition-colors duration-200">
+                En savoir plus
+                <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform duration-200" />
+              </span>
+
+              <span
+                onClick={(e) => e.preventDefault()}
+                onMouseDown={(e) => e.stopPropagation()}
+                className="relative z-10"
+              >
+                <Link
+                  href={buildReservationHref({ eventTitle: activity.title, eventSlug: activity.slug, eventType: activity.type, eventDate: activity.nextEventDate || null })}
+                  className="inline-flex items-center justify-center rounded-sm border border-[#5C3D2E] px-3 py-2 text-[11px] font-sans font-medium uppercase tracking-widest text-[#5C3D2E] transition-all duration-200 hover:bg-[#5C3D2E] hover:text-[#F5EDD8]"
+                >
+                  Réserver
+                </Link>
+              </span>
             </div>
           </div>
         </article>

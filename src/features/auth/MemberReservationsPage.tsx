@@ -7,8 +7,18 @@ import { Input, Textarea } from '@/components/ui/Input'
 import { ArrowLeft, Calendar, CheckCircle, Clock, XCircle, AlertCircle, Loader2 } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthContext'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import type { Reservation } from '@/lib/supabase/types'
+
+type ProfileReservationDefaults = {
+  first_name?: string | null
+  last_name?: string | null
+  diet_type?: string | null
+  food_allergies?: string | null
+  food_intolerances?: string | null
+  diet_notes?: string | null
+  logistics_notes?: string | null
+}
 
 const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; color: string; bg: string }> = {
   pending: {
@@ -51,6 +61,24 @@ const ACCOMMODATION_OPTIONS = [
   { value: 'external', label: 'Hébergement externe' },
 ]
 
+const TRANSPORT_OPTIONS = [
+  { value: '', label: 'Sélectionner un mode de transport' },
+  { value: 'train', label: 'Train' },
+  { value: 'avion', label: 'Avion' },
+  { value: 'voiture', label: 'Voiture' },
+  { value: 'bus', label: 'Bus' },
+]
+
+const DIET_OPTIONS = [
+  { value: '', label: 'Sélectionner un régime' },
+  { value: 'omnivore', label: 'Omnivore' },
+  { value: 'vegetarian', label: 'Végétarien' },
+  { value: 'vegan', label: 'Végan' },
+  { value: 'pescatarian', label: 'Pescétarien' },
+  { value: 'no_preference', label: 'Sans préférence' },
+  { value: 'other', label: 'Autre' },
+]
+
 function formatAccommodation(value: string | null | undefined) {
   switch (value) {
     case 'shared':
@@ -64,22 +92,42 @@ function formatAccommodation(value: string | null | undefined) {
   }
 }
 
+function normalizeDateForInput(value?: string | null) {
+  if (!value) return ''
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value
+
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return ''
+
+  return parsed.toISOString().slice(0, 10)
+}
+
 export function MemberReservationsPage() {
   const { user, isLoading } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [reservations, setReservations] = useState<Reservation[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [visible, setVisible] = useState(true)
   const [formSuccess, setFormSuccess] = useState('')
   const [formError, setFormError] = useState('')
+  const [profileDefaults, setProfileDefaults] = useState<ProfileReservationDefaults | null>(null)
+  const [hasAppliedQueryPrefill, setHasAppliedQueryPrefill] = useState(false)
   const [form, setForm] = useState({
     event_title: '',
     event_slug: '',
     event_date: '',
     accommodation_type: '',
+    transport_mode: '',
+    arrival_location: '',
+    needs_transfer: false,
     arrival_time: '',
     departure_time: '',
+    diet_type: '',
+    food_allergies: '',
+    food_intolerances: '',
+    logistics_notes: '',
     notes: '',
   })
 
@@ -89,9 +137,46 @@ export function MemberReservationsPage() {
 
   useEffect(() => {
     if (!isLoading && !user) {
-      router.push('/connexion?callbackUrl=/espace-membre/reservations')
+      const currentPath = typeof window !== 'undefined'
+        ? `${window.location.pathname}${window.location.search}`
+        : '/espace-membre/reservations'
+      router.push(`/connexion?callbackUrl=${encodeURIComponent(currentPath)}`)
     }
   }, [user, isLoading, router])
+
+  const loadProfileDefaults = useCallback(async () => {
+    if (!user) return
+    try {
+      const res = await fetch('/api/member/profile', {
+        headers: { Authorization: `Bearer ${user.accessToken}` },
+      })
+      if (!res.ok) return
+      const data = await res.json().catch(() => ({}))
+      const profile = data?.profile
+      if (!profile) return
+
+      const defaults: ProfileReservationDefaults = {
+        first_name: profile.first_name || null,
+        last_name: profile.last_name || null,
+        diet_type: profile.diet_type || null,
+        food_allergies: profile.food_allergies || null,
+        food_intolerances: profile.food_intolerances || null,
+        diet_notes: profile.diet_notes || null,
+        logistics_notes: profile.logistics_notes || null,
+      }
+
+      setProfileDefaults(defaults)
+      setForm((prev) => ({
+        ...prev,
+        diet_type: prev.diet_type || defaults.diet_type || '',
+        food_allergies: prev.food_allergies || defaults.food_allergies || '',
+        food_intolerances: prev.food_intolerances || defaults.food_intolerances || '',
+        logistics_notes: prev.logistics_notes || defaults.logistics_notes || '',
+      }))
+    } catch {
+      // silencieux
+    }
+  }, [user])
 
   const loadReservations = useCallback(async () => {
     if (!user) return
@@ -111,13 +196,41 @@ export function MemberReservationsPage() {
   }, [user])
 
   useEffect(() => {
-    if (user) loadReservations()
-  }, [user, loadReservations])
+    if (user) {
+      loadReservations()
+      loadProfileDefaults()
+    }
+  }, [user, loadReservations, loadProfileDefaults])
+
+  useEffect(() => {
+    if (!searchParams || hasAppliedQueryPrefill) return
+
+    const nextEventTitle = searchParams.get('event_title') || ''
+    const nextEventSlug = searchParams.get('event_slug') || ''
+    const nextEventDate = normalizeDateForInput(searchParams.get('event_date'))
+
+    if (!nextEventTitle && !nextEventSlug && !nextEventDate) {
+      setHasAppliedQueryPrefill(true)
+      return
+    }
+
+    setForm((prev) => ({
+      ...prev,
+      event_title: prev.event_title || nextEventTitle,
+      event_slug: prev.event_slug || nextEventSlug,
+      event_date: prev.event_date || nextEventDate,
+    }))
+    setHasAppliedQueryPrefill(true)
+  }, [searchParams, hasAppliedQueryPrefill])
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
+    const target = e.target
+    const value = target instanceof HTMLInputElement && target.type === 'checkbox'
+      ? target.checked
+      : target.value
+    setForm((prev) => ({ ...prev, [target.name]: value }))
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -140,8 +253,15 @@ export function MemberReservationsPage() {
           event_slug: form.event_slug.trim(),
           event_date: form.event_date,
           accommodation_type: form.accommodation_type || null,
+          transport_mode: form.transport_mode || null,
+          arrival_location: form.arrival_location.trim() || null,
+          needs_transfer: form.needs_transfer,
           arrival_time: form.arrival_time.trim() || null,
           departure_time: form.departure_time.trim() || null,
+          diet_type: form.diet_type || null,
+          food_allergies: form.food_allergies.trim() || null,
+          food_intolerances: form.food_intolerances.trim() || null,
+          logistics_notes: form.logistics_notes.trim() || null,
           notes: form.notes.trim() || null,
         }),
       })
@@ -158,11 +278,18 @@ export function MemberReservationsPage() {
         event_slug: '',
         event_date: '',
         accommodation_type: '',
+        transport_mode: '',
+        arrival_location: '',
+        needs_transfer: false,
         arrival_time: '',
         departure_time: '',
+        diet_type: '',
+        food_allergies: '',
+        food_intolerances: '',
+        logistics_notes: '',
         notes: '',
       })
-      setFormSuccess('Votre demande de réservation a bien été enregistrée.')
+      setFormSuccess('Votre demande de réservation a bien été enregistrée. Vous recevrez un email avec les informations pratiques d’accès.')
       await loadReservations()
     } catch {
       setFormError('Erreur de connexion')
@@ -213,7 +340,9 @@ export function MemberReservationsPage() {
                 <h2 className="font-serif text-2xl text-[#5C3D2E] mb-2">Demande de réservation</h2>
                 <p className="text-sm font-sans text-[#7A6355] leading-relaxed">
                   Indiquez l’atelier ou le stage souhaité ainsi que vos informations d’organisation.
-                  Vos préférences alimentaires enregistrées dans votre profil seront reprises automatiquement.
+                  Si vous arrivez depuis une page activité ou événement, certaines informations sont déjà préremplies.
+                  Vos préférences alimentaires enregistrées dans votre profil sont reprises automatiquement,
+                  puis vous complétez les informations de transport et d’hébergement pour chaque réservation.
                 </p>
               </div>
 
@@ -236,7 +365,7 @@ export function MemberReservationsPage() {
                     placeholder="ex. theatre-des-doubles-karmiques"
                     required
                     className="bg-[#FAF6EF]"
-                    hint="Identifiant simple de l’événement, utilisé côté organisation."
+                    hint="Prérempli automatiquement si vous arrivez depuis une page activité ou événement."
                   />
                 </div>
 
@@ -259,18 +388,31 @@ export function MemberReservationsPage() {
                     />
                   </div>
 
+                  {profileDefaults && (
+                    <div className="rounded-sm border border-[#E8D8B8] bg-white px-4 py-3">
+                      <p className="text-xs font-sans uppercase tracking-wider text-[#7A6355] mb-1">Informations déjà enregistrées dans votre profil</p>
+                      <p className="text-sm font-sans text-[#5C3D2E]">
+                        Régime : {profileDefaults.diet_type ? DIET_OPTIONS.find((option) => option.value === profileDefaults.diet_type)?.label || profileDefaults.diet_type : 'Non renseigné'}
+                      </p>
+                      <p className="text-sm font-sans text-[#7A6355] mt-1">
+                        Vous pouvez ajuster ces informations pour cette réservation si nécessaire.
+                      </p>
+                    </div>
+                  )}
+
                   <div>
                     <label
                       htmlFor="accommodation_type"
                       className="block text-sm font-sans font-medium text-[#5C3D2E] mb-1.5"
                     >
-                      Hébergement
+                      Hébergement *
                     </label>
                     <select
                       id="accommodation_type"
                       name="accommodation_type"
                       value={form.accommodation_type}
                       onChange={handleChange}
+                      required
                       className="w-full rounded-sm border border-[#D4C4A8] bg-[#FAF6EF] px-4 py-3 font-sans text-sm text-[#2D1F14] transition-colors duration-200 focus:outline-none focus:border-[#C8912A] focus:ring-1 focus:ring-[#C8912A]/30"
                     >
                       {ACCOMMODATION_OPTIONS.map((option) => (
@@ -282,24 +424,140 @@ export function MemberReservationsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <Input
-                    label="Heure d’arrivée (optionnel)"
-                    name="arrival_time"
-                    value={form.arrival_time}
-                    onChange={handleChange}
-                    placeholder="Ex. 18h00"
-                    className="bg-[#FAF6EF]"
-                  />
-                  <Input
-                    label="Heure de départ (optionnel)"
-                    name="departure_time"
-                    value={form.departure_time}
-                    onChange={handleChange}
-                    placeholder="Ex. 15h30"
-                    className="bg-[#FAF6EF]"
-                  />
+                <div className="border border-[#E8D8B8] bg-[#FCF8F1] rounded-sm p-5 space-y-4">
+                  <div>
+                    <p className="text-[11px] font-sans uppercase tracking-widest text-[#C8912A] mb-1">Informations logistiques</p>
+                    <p className="text-sm font-sans text-[#7A6355]">Ces informations sont essentielles pour organiser votre accueil dans les meilleures conditions.</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div>
+                      <label htmlFor="transport_mode" className="block text-sm font-sans font-medium text-[#5C3D2E] mb-1.5">
+                        Mode de transport *
+                      </label>
+                      <select
+                        id="transport_mode"
+                        name="transport_mode"
+                        value={form.transport_mode}
+                        onChange={handleChange}
+                        required
+                        className="w-full rounded-sm border border-[#D4C4A8] bg-white px-4 py-3 font-sans text-sm text-[#2D1F14] transition-colors duration-200 focus:outline-none focus:border-[#C8912A] focus:ring-1 focus:ring-[#C8912A]/30"
+                      >
+                        {TRANSPORT_OPTIONS.map((option) => (
+                          <option key={option.value || 'empty'} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <Input
+                      label="Lieu d’arrivée *"
+                      name="arrival_location"
+                      value={form.arrival_location}
+                      onChange={handleChange}
+                      placeholder="Ex. Toulouse Matabiau, Toulouse Blagnac"
+                      required
+                      className="bg-white"
+                    />
+                  </div>
+
+                  <label className="flex items-center gap-3 rounded-sm border border-[#E8D8B8] bg-white px-4 py-3 text-sm font-sans text-[#2D1F14]">
+                    <input
+                      type="checkbox"
+                      name="needs_transfer"
+                      checked={form.needs_transfer}
+                      onChange={handleChange}
+                      className="h-4 w-4 rounded border-[#C8A888] text-[#5C3D2E] focus:ring-[#C8912A]"
+                    />
+                    J’aurai besoin d’une navette ou d’une aide de transfert
+                  </label>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <Input
+                      label="Heure d’arrivée *"
+                      name="arrival_time"
+                      value={form.arrival_time}
+                      onChange={handleChange}
+                      placeholder="Ex. 18h00"
+                      required
+                      className="bg-white"
+                    />
+                    <Input
+                      label="Heure de départ (optionnel)"
+                      name="departure_time"
+                      value={form.departure_time}
+                      onChange={handleChange}
+                      placeholder="Ex. 15h30"
+                      className="bg-white"
+                    />
+                  </div>
                 </div>
+
+                <div className="border border-[#E8D8B8] bg-[#FCF8F1] rounded-sm p-5 space-y-4">
+                  <div>
+                    <p className="text-[11px] font-sans uppercase tracking-widest text-[#C8912A] mb-1">Alimentation</p>
+                    <p className="text-sm font-sans text-[#7A6355]">Ces informations sont préremplies depuis votre profil si elles sont déjà connues.</p>
+                  </div>
+
+                  {profileDefaults && (
+                    <div className="rounded-sm border border-[#E8D8B8] bg-white px-4 py-3">
+                      <p className="text-xs font-sans uppercase tracking-wider text-[#7A6355] mb-1">Informations déjà enregistrées dans votre profil</p>
+                      <p className="text-sm font-sans text-[#5C3D2E]">
+                        Régime : {profileDefaults.diet_type ? DIET_OPTIONS.find((option) => option.value === profileDefaults.diet_type)?.label || profileDefaults.diet_type : 'Non renseigné'}
+                      </p>
+                      <p className="text-sm font-sans text-[#7A6355] mt-1">
+                        Vous pouvez ajuster ces informations pour cette réservation si nécessaire.
+                      </p>
+                    </div>
+                  )}
+
+                  <div>
+                    <label htmlFor="diet_type" className="block text-sm font-sans font-medium text-[#5C3D2E] mb-1.5">
+                      Type de régime
+                    </label>
+                    <select
+                      id="diet_type"
+                      name="diet_type"
+                      value={form.diet_type}
+                      onChange={handleChange}
+                      className="w-full rounded-sm border border-[#D4C4A8] bg-white px-4 py-3 font-sans text-sm text-[#2D1F14] transition-colors duration-200 focus:outline-none focus:border-[#C8912A] focus:ring-1 focus:ring-[#C8912A]/30"
+                    >
+                      {DIET_OPTIONS.map((option) => (
+                        <option key={option.value || 'empty'} value={option.value}>{option.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <Textarea
+                      label="Allergies"
+                      name="food_allergies"
+                      value={form.food_allergies}
+                      onChange={handleChange}
+                      placeholder="Ex. arachides, fruits à coque..."
+                      rows={4}
+                      className="bg-white"
+                    />
+                    <Textarea
+                      label="Intolérances"
+                      name="food_intolerances"
+                      value={form.food_intolerances}
+                      onChange={handleChange}
+                      placeholder="Ex. gluten, lactose..."
+                      rows={4}
+                      className="bg-white"
+                    />
+                  </div>
+                </div>
+
+                <Textarea
+                  label="Notes logistiques"
+                  name="logistics_notes"
+                  value={form.logistics_notes}
+                  onChange={handleChange}
+                  placeholder="Précisions utiles pour votre arrivée, votre départ ou l’organisation sur place..."
+                  rows={4}
+                  className="bg-[#FAF6EF]"
+                />
 
                 <Textarea
                   label="Remarques complémentaires"
