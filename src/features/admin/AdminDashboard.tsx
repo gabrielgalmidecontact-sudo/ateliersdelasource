@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   Users, FileText, Calendar, Settings, LogOut, ChevronRight,
-  BookOpen, Feather, Plus, Eye, Award
+  BookOpen, Feather, Plus, Eye, Award, MessageSquare
 } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthContext'
 import { Container } from '@/components/ui/Container'
@@ -85,6 +85,7 @@ export function AdminDashboard() {
   const router = useRouter()
   const [members, setMembers] = useState<MemberSummary[]>([])
   const [stats, setStats] = useState({ members: 0, stages: 0, reservations: 0 })
+  const [reviewPendingCount, setReviewPendingCount] = useState(0)
   const [visible, setVisible] = useState(true)
 
   useEffect(() => { setVisible(true) }, [])
@@ -98,6 +99,7 @@ export function AdminDashboard() {
 
   useEffect(() => {
     if (!user || !isAdmin) return
+
     fetch('/api/admin/members', {
       headers: { Authorization: `Bearer ${user.accessToken}` },
     }).then(r => r.json()).then(data => {
@@ -105,6 +107,16 @@ export function AdminDashboard() {
         const list: MemberSummary[] = data.members
         setMembers(list)
         setStats(s => ({ ...s, members: list.length }))
+      }
+    })
+
+    fetch('/api/admin/reviews?status=pending', {
+      headers: { Authorization: `Bearer ${user.accessToken}` },
+    }).then(r => r.json()).then(data => {
+      if (typeof data.pendingCount === 'number') {
+        setReviewPendingCount(data.pendingCount)
+      } else if (Array.isArray(data.reviews)) {
+        setReviewPendingCount(data.reviews.filter((item: { is_published?: boolean }) => !item.is_published).length)
       }
     })
   }, [user, isAdmin])
@@ -162,6 +174,14 @@ export function AdminDashboard() {
       description: 'Référentiel et validation',
       badge: null,
       color: '#4A5E3A',
+    },
+    {
+      href: '/admin/avis',
+      icon: <MessageSquare size={20} />,
+      label: 'Avis',
+      description: 'Valider les témoignages',
+      badge: reviewPendingCount > 0 ? String(reviewPendingCount) : null,
+      color: '#C8912A',
     },
     {
       href: '/studio',
@@ -254,9 +274,9 @@ export function AdminDashboard() {
                 color="#4A5E3A"
               />
               <AdminStat
-                value={activeMembers.length}
-                label="Avec expériences"
-                icon={<Eye size={18} />}
+                value={reviewPendingCount}
+                label="Avis en attente"
+                icon={<MessageSquare size={18} />}
                 color="#7A6355"
               />
             </div>

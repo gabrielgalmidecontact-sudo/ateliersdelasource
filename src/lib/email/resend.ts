@@ -251,6 +251,53 @@ export async function sendEmail(params: {
 }
 
 
+
+export async function sendReviewRequestEmail(params: {
+  to: string
+  firstName?: string | null
+  eventTitle: string
+  eventSlug: string
+}) {
+  const resend = getResend()
+  const { to, firstName, eventTitle, eventSlug } = params
+
+  const greeting = firstName?.trim() ? `Bonjour ${firstName},` : 'Bonjour,'
+  const reviewUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://ateliersdelasource.fr'}/evenements/${eventSlug}`
+
+  const content = `
+    <h1 style="font-family:Georgia,serif;font-size:24px;color:#5C3D2E;margin:0 0 16px;">
+      Merci pour votre présence
+    </h1>
+    <p style="font-family:Arial,sans-serif;font-size:15px;color:#2D1F14;line-height:1.7;margin:0 0 16px;">${greeting}</p>
+    <p style="font-family:Arial,sans-serif;font-size:15px;color:#2D1F14;line-height:1.7;margin:0 0 16px;">
+      Merci d’avoir participé à <strong>${eventTitle}</strong>.
+    </p>
+    <p style="font-family:Arial,sans-serif;font-size:15px;color:#2D1F14;line-height:1.7;margin:0 0 24px;">
+      Si vous le souhaitez, vous pouvez partager votre ressenti en laissant un avis. Cela aide d’autres personnes à découvrir le travail proposé aux Ateliers de la Source.
+    </p>
+    <table cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
+      <tr>
+        <td style="background-color:#C8912A;border-radius:2px;padding:14px 28px;">
+          <a href="${reviewUrl}" 
+             style="font-family:Arial,sans-serif;font-size:14px;color:#FFFFFF;text-decoration:none;font-weight:600;letter-spacing:0.5px;">
+            Laisser un avis →
+          </a>
+        </td>
+      </tr>
+    </table>
+    <p style="font-family:Arial,sans-serif;font-size:13px;color:#7A6355;line-height:1.6;margin:0;border-top:1px solid #D4C4A8;padding-top:16px;">
+      Votre avis sera relu avant publication sur le site.
+    </p>
+  `
+
+  return resend.emails.send({
+    from: FROM_EMAIL,
+    to,
+    subject: `Merci pour votre présence — ${eventTitle}`,
+    html: baseTemplate(content),
+  })
+}
+
 export async function sendReservationPracticalEmail(params: {
   to: string
   firstName?: string | null

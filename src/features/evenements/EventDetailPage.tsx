@@ -7,6 +7,7 @@ import { Container } from '@/components/ui/Container'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { buildReservationHref } from '@/lib/reservations/buildReservationHref'
+import { ReviewsSection } from '@/features/reviews/ReviewsSection'
 
 const MONTHS_FR = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
 
@@ -26,7 +27,15 @@ interface EventData {
   imageUrl: string
 }
 
-
+type EventReview = {
+  id: string
+  content_title?: string
+  first_name: string
+  rating: number
+  comment: string
+  is_verified_participant?: boolean
+  created_at: string
+}
 
 function formatContent(text: string) {
   const safeText = typeof text === 'string' ? text.trim() : ''
@@ -48,18 +57,19 @@ function isValidDate(value?: string) {
   return !Number.isNaN(new Date(value).getTime())
 }
 
-function toDateInputValue(value?: string) {
-  if (!isValidDate(value)) return ''
-  return new Date(value as string).toISOString().slice(0, 10)
-}
-
 function formatDate(value?: string) {
   if (!isValidDate(value)) return 'Date à confirmer'
   const date = new Date(value as string)
   return `${date.getDate()} ${MONTHS_FR[date.getMonth()]} ${date.getFullYear()}`
 }
 
-export function EventDetailPage({ event }: { event: EventData }) {
+export function EventDetailPage({
+  event,
+  reviews = [],
+}: {
+  event: EventData
+  reviews?: EventReview[]
+}) {
   const [visible, setVisible] = useState(true)
 
   const hasStartDate = isValidDate(event.startDate)
@@ -148,6 +158,20 @@ export function EventDetailPage({ event }: { event: EventData }) {
 
               <div className="w-12 h-0.5 bg-gradient-to-r from-[#D4AF50] to-transparent mb-8" />
               <div>{formatContent(event.description)}</div>
+
+              {reviews.length > 0 ? (
+                <div className="mt-12">
+                  <ReviewsSection
+                    contentType="event"
+                    contentSlug={event.slug}
+                    contentTitle={event.title}
+                    initialReviews={reviews}
+                    title="Ils ont vécu cette expérience"
+                    intro="Quelques retours partagés par les participants."
+                    showForm={false}
+                  />
+                </div>
+              ) : null}
 
               <div className="mt-12 p-8 bg-[#F5EDD8] rounded-sm border border-[#D4C4A8]">
                 <h2 className="font-serif text-xl text-[#5C3D2E] mb-2">

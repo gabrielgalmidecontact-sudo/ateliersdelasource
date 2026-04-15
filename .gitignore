@@ -49,3 +49,6 @@ backups/
 # backups
 *.bak
 *.before-*
+
+# supabase temp
+supabase/.temp

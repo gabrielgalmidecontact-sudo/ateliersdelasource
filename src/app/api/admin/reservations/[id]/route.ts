@@ -1,6 +1,7 @@
 // src/app/api/admin/reservations/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/server'
+import { sendReviewRequestEmail } from '@/lib/email/resend'
 
 const ALLOWED_STATUS = ['pending', 'confirmed', 'cancelled', 'completed'] as const
 const ALLOWED_PAYMENT_STATUS = ['free', 'pending', 'paid', 'refunded'] as const
@@ -88,6 +89,16 @@ export async function PATCH(
 
   const { supabase } = ctx
 
+  const { data: existingReservation, error: existingError } = await supabase
+    .from('reservations')
+    .select('id, member_id, event_title, event_slug, status')
+    .eq('id', id)
+    .single()
+
+  if (existingError || !existingReservation) {
+    return NextResponse.json({ error: 'Réservation introuvable' }, { status: 404 })
+  }
+
   const { data, error } = await supabase
     .from('reservations')
     .update(updates)
@@ -97,6 +108,31 @@ export async function PATCH(
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 })
+  }
+
+  const statusJustCompleted =
+    existingReservation.status !== 'completed' &&
+    data?.status === 'completed'
+
+  if (statusJustCompleted && existingReservation.member_id) {
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('email, first_name')
+        .eq('id', existingReservation.member_id)
+        .single()
+
+      if (profile?.email && existingReservation.event_slug && existingReservation.event_title) {
+        await sendReviewRequestEmail({
+          to: profile.email,
+          firstName: profile.first_name || null,
+          eventTitle: existingReservation.event_title,
+          eventSlug: existingReservation.event_slug,
+        })
+      }
+    } catch (emailError) {
+      console.error('[REVIEW REQUEST EMAIL ERROR]', emailError)
+    }
   }
 
   return NextResponse.json({ reservation: data })

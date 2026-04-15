@@ -5,6 +5,7 @@ import { HeroHome } from '@/features/home/HeroHome'
 import { HomeIntro } from '@/features/home/HomeIntro'
 import { FounderColumns } from '@/features/home/FounderColumns'
 import { FeaturedEvents } from '@/features/home/FeaturedEvents'
+import { HomeReviews } from '@/features/home/HomeReviews'
 import { NewsletterSection } from '@/features/newsletter/NewsletterSection'
 import { sanityFetch, sanityFetchArray } from '@/lib/sanity/fetch'
 import {
@@ -16,6 +17,7 @@ import {
   upcomingEventsQuery,
 } from '@/lib/sanity/queries'
 import { imageUrl } from '@/lib/sanity/image'
+import { createServerClient } from '@/lib/supabase/server'
 import type { Activity, Event, Person, SiteSettings } from '@/types'
 
 export const metadata: Metadata = {
@@ -26,6 +28,15 @@ export const metadata: Metadata = {
     description: 'Stages de développement personnel, ateliers et spectacles.',
     images: [{ url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80' }],
   },
+}
+
+type HomeReview = {
+  id: string
+  first_name: string
+  rating: number
+  comment: string
+  is_verified_participant?: boolean
+  created_at: string
 }
 
 const FALLBACK_GABRIEL_ACTIVITIES = [
@@ -137,16 +148,40 @@ function normalizeHomeEvent(event: Event) {
   }
 }
 
+async function getHomeReviews(): Promise<HomeReview[]> {
+  try {
+    const supabase = createServerClient()
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('id, first_name, rating, comment, is_verified_participant, created_at')
+      .eq('is_published', true)
+      .eq('content_type', 'event')
+      .order('created_at', { ascending: false })
+      .limit(3)
+
+    if (error) {
+      console.error('[HOME REVIEWS ERROR]', error)
+      return []
+    }
+
+    return (data || []) as HomeReview[]
+  } catch (error) {
+    console.error('[HOME REVIEWS FETCH ERROR]', error)
+    return []
+  }
+}
+
 export default async function HomePage() {
   const now = new Date().toISOString()
 
-  const [siteSettings, activities, homepageEvents, upcomingEvents, allEvents, persons] = await Promise.all([
+  const [siteSettings, activities, homepageEvents, upcomingEvents, allEvents, persons, homeReviews] = await Promise.all([
     sanityFetch<SiteSettings>(siteSettingsQuery),
     sanityFetchArray<Activity>(allActivitiesQuery),
     sanityFetchArray<Event>(homepageEventsQuery),
     sanityFetchArray<Event>(upcomingEventsQuery, { now }),
     sanityFetchArray<Event>(allEventsQuery),
     sanityFetchArray<Person>(allPersonsQuery),
+    getHomeReviews(),
   ])
 
   const normalizedActivities = activities
@@ -227,6 +262,7 @@ export default async function HomePage() {
       <FounderColumns gabriel={gabriel} amelie={amelie} />
       <FeaturedEvents events={featuredEvents} />
       {newsletterEnabled ? <NewsletterSection /> : null}
+      <HomeReviews reviews={homeReviews} />
     </>
   )
 }

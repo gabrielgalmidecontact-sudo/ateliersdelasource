@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Container } from '@/components/ui/Container'
 import { Button } from '@/components/ui/Button'
 import { Input, Textarea } from '@/components/ui/Input'
-import { ArrowLeft, Calendar, CheckCircle, Clock, XCircle, AlertCircle, Loader2 } from 'lucide-react'
+import { ArrowLeft, Calendar, CheckCircle, Clock, XCircle, AlertCircle, Loader2, Star } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthContext'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -18,6 +18,15 @@ type ProfileReservationDefaults = {
   food_intolerances?: string | null
   diet_notes?: string | null
   logistics_notes?: string | null
+}
+
+type MemberReview = {
+  id: string
+  reservation_id: string | null
+  content_slug: string
+  content_title: string
+  is_published: boolean
+  created_at: string
 }
 
 const STATUS_CONFIG: Record<string, { label: string; icon: React.ReactNode; color: string; bg: string }> = {
@@ -102,11 +111,35 @@ function normalizeDateForInput(value?: string | null) {
   return parsed.toISOString().slice(0, 10)
 }
 
+function StarRating({
+  value,
+  onChange,
+}: {
+  value: number
+  onChange?: (value: number) => void
+}) {
+  return (
+    <div className="flex items-center gap-1">
+      {[1, 2, 3, 4, 5].map((n) => (
+        <button
+          key={n}
+          type="button"
+          onClick={() => onChange?.(n)}
+          className={`${n <= value ? 'text-[#C8912A]' : 'text-[#D4C4A8]'} ${onChange ? 'cursor-pointer hover:text-[#C8912A]' : 'cursor-default'}`}
+        >
+          <Star size={18} fill={n <= value ? 'currentColor' : 'none'} />
+        </button>
+      ))}
+    </div>
+  )
+}
+
 export function MemberReservationsPage() {
   const { user, isLoading } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
   const [reservations, setReservations] = useState<Reservation[]>([])
+  const [memberReviews, setMemberReviews] = useState<MemberReview[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [visible, setVisible] = useState(true)
@@ -114,6 +147,10 @@ export function MemberReservationsPage() {
   const [formError, setFormError] = useState('')
   const [profileDefaults, setProfileDefaults] = useState<ProfileReservationDefaults | null>(null)
   const [hasAppliedQueryPrefill, setHasAppliedQueryPrefill] = useState(false)
+  const [openReviewId, setOpenReviewId] = useState<string | null>(null)
+  const [reviewSubmittingFor, setReviewSubmittingFor] = useState<string | null>(null)
+  const [reviewMessage, setReviewMessage] = useState<Record<string, { type: 'success' | 'error'; text: string }>>({})
+  const [reviewDrafts, setReviewDrafts] = useState<Record<string, { firstName: string; email: string; rating: number; comment: string }>>({})
   const [form, setForm] = useState({
     event_title: '',
     event_slug: '',
@@ -195,12 +232,27 @@ export function MemberReservationsPage() {
     }
   }, [user])
 
+  const loadMemberReviews = useCallback(async () => {
+    if (!user) return
+    try {
+      const res = await fetch('/api/member/reviews', {
+        headers: { Authorization: `Bearer ${user.accessToken}` },
+      })
+      if (!res.ok) return
+      const data = await res.json().catch(() => ({}))
+      setMemberReviews(data.reviews || [])
+    } catch {
+      // silencieux
+    }
+  }, [user])
+
   useEffect(() => {
     if (user) {
       loadReservations()
       loadProfileDefaults()
+      loadMemberReviews()
     }
-  }, [user, loadReservations, loadProfileDefaults])
+  }, [user, loadReservations, loadProfileDefaults, loadMemberReviews])
 
   useEffect(() => {
     if (!searchParams || hasAppliedQueryPrefill) return
@@ -231,6 +283,129 @@ export function MemberReservationsPage() {
       ? target.checked
       : target.value
     setForm((prev) => ({ ...prev, [target.name]: value }))
+  }
+
+  function getReservationReview(reservation: Reservation) {
+    return memberReviews.find((review) =>
+      review.reservation_id === reservation.id ||
+      review.content_slug === reservation.event_slug
+    )
+  }
+
+  function openReviewForm(reservation: Reservation) {
+    const existing = reviewDrafts[reservation.id]
+    if (!existing) {
+      setReviewDrafts((prev) => ({
+        ...prev,
+        [reservation.id]: {
+          firstName: profileDefaults?.first_name || '',
+          email: user?.email || '',
+          rating: 5,
+          comment: '',
+        },
+      }))
+    }
+    setReviewMessage((prev) => ({ ...prev, [reservation.id]: undefined as never }))
+    setOpenReviewId(reservation.id)
+  }
+
+  function updateReviewDraft(
+    reservationId: string,
+    patch: Partial<{ firstName: string; email: string; rating: number; comment: string }>
+  ) {
+    setReviewDrafts((prev) => ({
+      ...prev,
+      [reservationId]: {
+        firstName: prev[reservationId]?.firstName || profileDefaults?.first_name || '',
+        email: prev[reservationId]?.email || user?.email || '',
+        rating: prev[reservationId]?.rating || 5,
+        comment: prev[reservationId]?.comment || '',
+        ...patch,
+      },
+    }))
+  }
+
+  async function submitReview(reservation: Reservation) {
+    if (!user) return
+
+    const draft = reviewDrafts[reservation.id] || {
+      firstName: profileDefaults?.first_name || '',
+      email: user.email || '',
+      rating: 5,
+      comment: '',
+    }
+
+    if (!draft.firstName.trim()) {
+      setReviewMessage((prev) => ({
+        ...prev,
+        [reservation.id]: { type: 'error', text: 'Le prénom est requis.' },
+      }))
+      return
+    }
+
+    if (!draft.email.trim() || !draft.email.includes('@')) {
+      setReviewMessage((prev) => ({
+        ...prev,
+        [reservation.id]: { type: 'error', text: 'Un email valide est requis.' },
+      }))
+      return
+    }
+
+    if (!draft.comment.trim() || draft.comment.trim().length < 10) {
+      setReviewMessage((prev) => ({
+        ...prev,
+        [reservation.id]: { type: 'error', text: 'Votre commentaire doit contenir au moins 10 caractères.' },
+      }))
+      return
+    }
+
+    setReviewSubmittingFor(reservation.id)
+    setReviewMessage((prev) => ({ ...prev, [reservation.id]: undefined as never }))
+
+    try {
+      const response = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${user.accessToken}`,
+        },
+        body: JSON.stringify({
+          contentType: 'event',
+          contentSlug: reservation.event_slug,
+          contentTitle: reservation.event_title,
+          firstName: draft.firstName.trim(),
+          email: draft.email.trim(),
+          rating: draft.rating,
+          comment: draft.comment.trim(),
+        }),
+      })
+
+      const data = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(data?.error || 'Erreur lors de l’envoi de l’avis.')
+      }
+
+      setReviewMessage((prev) => ({
+        ...prev,
+        [reservation.id]: {
+          type: 'success',
+          text: 'Merci. Votre avis a bien été enregistré et sera publié après validation.',
+        },
+      }))
+      setOpenReviewId(null)
+      await loadMemberReviews()
+    } catch (error) {
+      setReviewMessage((prev) => ({
+        ...prev,
+        [reservation.id]: {
+          type: 'error',
+          text: error instanceof Error ? error.message : 'Erreur lors de l’envoi de l’avis.',
+        },
+      }))
+    } finally {
+      setReviewSubmittingFor(null)
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -629,6 +804,14 @@ export function MemberReservationsPage() {
                   const paymentConfig = PAYMENT_CONFIG[res.payment_status] || PAYMENT_CONFIG.free
                   const eventDate = new Date(res.event_date)
                   const isPast = eventDate < new Date()
+                  const existingReview = getReservationReview(res)
+                  const reviewDraft = reviewDrafts[res.id] || {
+                    firstName: profileDefaults?.first_name || '',
+                    email: user.email || '',
+                    rating: 5,
+                    comment: '',
+                  }
+                  const reviewStatusMessage = reviewMessage[res.id]
 
                   return (
                     <div
@@ -668,6 +851,18 @@ export function MemberReservationsPage() {
                               {paymentConfig.label}
                               {res.amount_cents ? ` (${(res.amount_cents / 100).toFixed(0)} €)` : ''}
                             </span>
+
+                            {existingReview ? (
+                              <span
+                                className="inline-flex items-center gap-1 text-xs font-sans px-2 py-0.5 rounded-full"
+                                style={{
+                                  color: existingReview.is_published ? '#065F46' : '#92400E',
+                                  backgroundColor: existingReview.is_published ? '#D1FAE5' : '#FEF3C7',
+                                }}
+                              >
+                                {existingReview.is_published ? 'Avis publié' : 'Avis envoyé — en attente'}
+                              </span>
+                            ) : null}
                           </div>
                         </div>
 
@@ -697,6 +892,119 @@ export function MemberReservationsPage() {
                             <p className="text-xs font-sans text-[#7A6355] italic">{res.notes}</p>
                           )}
                         </div>
+
+                        {res.status === 'completed' && !existingReview ? (
+                          <div className="border border-[#E8D8B8] bg-[#FCF8F1] rounded-sm p-4">
+                            {openReviewId === res.id ? (
+                              <div className="space-y-4">
+                                <div>
+                                  <p className="text-[11px] font-sans uppercase tracking-widest text-[#C8912A] mb-1">Votre avis</p>
+                                  <p className="text-sm font-sans text-[#7A6355]">
+                                    Partagez votre ressenti sur cette expérience. Votre avis sera relu avant publication.
+                                  </p>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                  <Input
+                                    label="Prénom"
+                                    value={reviewDraft.firstName}
+                                    onChange={(e) => updateReviewDraft(res.id, { firstName: e.target.value })}
+                                    className="bg-white"
+                                  />
+                                  <Input
+                                    label="Email"
+                                    type="email"
+                                    value={reviewDraft.email}
+                                    onChange={(e) => updateReviewDraft(res.id, { email: e.target.value })}
+                                    className="bg-white"
+                                  />
+                                </div>
+
+                                <div>
+                                  <p className="block text-sm font-sans font-medium text-[#5C3D2E] mb-2">Votre note</p>
+                                  <StarRating
+                                    value={reviewDraft.rating}
+                                    onChange={(value) => updateReviewDraft(res.id, { rating: value })}
+                                  />
+                                </div>
+
+                                <Textarea
+                                  label="Votre commentaire"
+                                  value={reviewDraft.comment}
+                                  onChange={(e) => updateReviewDraft(res.id, { comment: e.target.value })}
+                                  rows={5}
+                                  placeholder="Ce que vous avez vécu, ressenti, ou ce que cette expérience vous a apporté..."
+                                  className="bg-white"
+                                />
+
+                                {reviewStatusMessage ? (
+                                  <div className={`flex items-center gap-2 p-3 rounded-sm border ${
+                                    reviewStatusMessage.type === 'success'
+                                      ? 'bg-[#F0F5EC] border-[#B8D4A8]'
+                                      : 'bg-[#FEF2F2] border-[#FECACA]'
+                                  }`}>
+                                    {reviewStatusMessage.type === 'success' ? (
+                                      <CheckCircle size={16} className="text-[#4A5E3A] flex-shrink-0" />
+                                    ) : (
+                                      <AlertCircle size={16} className="text-red-600 flex-shrink-0" />
+                                    )}
+                                    <p className={`text-sm font-sans ${
+                                      reviewStatusMessage.type === 'success' ? 'text-[#4A5E3A]' : 'text-red-600'
+                                    }`}>
+                                      {reviewStatusMessage.text}
+                                    </p>
+                                  </div>
+                                ) : null}
+
+                                <div className="flex flex-wrap items-center gap-3">
+                                  <Button
+                                    type="button"
+                                    variant="secondary"
+                                    size="md"
+                                    disabled={reviewSubmittingFor === res.id}
+                                    onClick={() => submitReview(res)}
+                                  >
+                                    {reviewSubmittingFor === res.id ? (
+                                      <>
+                                        <Loader2 size={16} className="animate-spin" />
+                                        Envoi...
+                                      </>
+                                    ) : (
+                                      'Envoyer mon avis'
+                                    )}
+                                  </Button>
+
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="md"
+                                    onClick={() => setOpenReviewId(null)}
+                                  >
+                                    Annuler
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex flex-wrap items-center justify-between gap-3">
+                                <div>
+                                  <p className="font-serif text-base text-[#5C3D2E]">Vous souhaitez partager votre ressenti ?</p>
+                                  <p className="text-sm font-sans text-[#7A6355]">
+                                    Votre témoignage peut aider d’autres personnes à découvrir cette proposition.
+                                  </p>
+                                </div>
+
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="md"
+                                  onClick={() => openReviewForm(res)}
+                                >
+                                  Laisser un avis
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        ) : null}
                       </div>
 
                       <div className="text-right flex-shrink-0">

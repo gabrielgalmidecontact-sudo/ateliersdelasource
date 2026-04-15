@@ -98,6 +98,24 @@ export interface Reservation {
   created_at: string
 }
 
+
+export interface Review {
+  id: string
+  content_type: 'event' | 'activity'
+  content_slug: string
+  content_title: string
+  member_id: string | null
+  reservation_id: string | null
+  first_name: string
+  email: string
+  rating: number
+  comment: string
+  is_published: boolean
+  is_verified_participant: boolean
+  published_at: string | null
+  created_at: string
+}
+
 // ─── Journal libre (hors stage) ───────────────────────────────
 export interface GlobalNote {
   id: string
@@ -495,6 +513,54 @@ export interface Database {
         }
         Relationships: []
       }
+      reviews: {
+        Row: Record<string, unknown> & {
+          id: string
+          content_type: string
+          content_slug: string
+          content_title: string
+          member_id: string | null
+          reservation_id: string | null
+          first_name: string
+          email: string
+          rating: number
+          comment: string
+          is_published: boolean
+          is_verified_participant: boolean
+          published_at: string | null
+          created_at: string
+        }
+        Insert: {
+          content_type: string
+          content_slug: string
+          content_title: string
+          member_id?: string | null
+          reservation_id?: string | null
+          first_name: string
+          email: string
+          rating: number
+          comment: string
+          is_published?: boolean
+          is_verified_participant?: boolean
+          published_at?: string | null
+        }
+        Update: {
+          content_type?: string
+          content_slug?: string
+          content_title?: string
+          member_id?: string | null
+          reservation_id?: string | null
+          first_name?: string
+          email?: string
+          rating?: number
+          comment?: string
+          is_published?: boolean
+          is_verified_participant?: boolean
+          published_at?: string | null
+        }
+        Relationships: []
+      }
+
       member_global_notes: {
         Row: Record<string, unknown> & {
           id: string
