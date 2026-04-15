@@ -40,7 +40,15 @@ export const eventDocument = defineType({
       title: 'Type',
       type: 'string',
       group: 'content',
-      options: { list: ['Stage', 'Atelier', 'Formation', 'Spectacle', 'Retraite', 'Autre'] },
+      options: {
+        list: [
+          { title: 'Stage', value: 'Stage' },
+          { title: 'Atelier', value: 'Atelier' },
+          { title: 'Spectacle', value: 'Spectacle' },
+          { title: 'Formation', value: 'Formation' },
+          { title: 'Hébergement', value: 'Hébergement' },
+        ],
+      },
       validation: (Rule) => Rule.required(),
     }),
     defineField({ name: 'owner', title: 'Animateur', type: 'reference', to: [{ type: 'person' }], group: 'content' }),
@@ -82,6 +90,14 @@ export const eventDocument = defineType({
     defineField({ name: 'isActive', title: 'Actif (visible)', type: 'boolean', group: 'display', initialValue: true }),
     defineField({ name: 'showOnHomepage', title: 'Afficher sur la homepage', type: 'boolean', group: 'display', initialValue: false }),
     defineField({ name: 'homepageOrder', title: 'Ordre sur la homepage', type: 'number', group: 'display', initialValue: 99 }),
+    defineField({
+      name: 'shareOnSocials',
+      title: 'Partager sur Facebook',
+      type: 'boolean',
+      group: 'display',
+      initialValue: false,
+      description: 'Enverra ce contenu au webhook Make / n8n pour publication Facebook.',
+    }),
     defineField({ name: 'seo', title: 'SEO', type: 'seo', group: 'seo' }),
   ],
   preview: {

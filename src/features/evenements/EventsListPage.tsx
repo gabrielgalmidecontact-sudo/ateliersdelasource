@@ -67,6 +67,7 @@ const typeColors: Record<string, 'ocre' | 'vert' | 'brun' | 'ghost'> = {
   Atelier: 'ocre',
   Spectacle: 'vert',
   Formation: 'ghost',
+  Hébergement: 'ocre',
 }
 
 
@@ -185,7 +186,7 @@ function EventCard({ event, index }: { event: DisplayEvent; index: number }) {
   )
 }
 
-const EVENT_TYPES = ['Tous', 'Stage', 'Atelier', 'Spectacle', 'Formation']
+const EVENT_TYPES = ['Tous', 'Stage', 'Atelier', 'Spectacle', 'Formation', 'Hébergement']
 
 interface Props {
   sanityEvents?: Event[] | null

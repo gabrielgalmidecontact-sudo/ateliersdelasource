@@ -1,41 +1,73 @@
 // src/app/api/social-share/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 
-// Endpoint appelé par Sanity via un webhook GROQ-triggered ou manuellement
-// Déclenche un webhook Make / n8n avec les données de l'article
+function getSlugValue(slug: unknown): string {
+  if (typeof slug === 'string') return slug
+  if (slug && typeof slug === 'object' && 'current' in slug) {
+    const current = (slug as { current?: unknown }).current
+    return typeof current === 'string' ? current : ''
+  }
+  return ''
+}
+
+function getContentPath(type: string, slug: string): string | null {
+  if (!slug) return null
+
+  switch (type) {
+    case 'post':
+      return `/blog/${slug}`
+    case 'activity':
+      return `/activites/${slug}`
+    case 'event':
+      return `/evenements/${slug}`
+    default:
+      return null
+  }
+}
+
+// Endpoint appelé par Sanity via webhook ou manuellement.
+// Déclenche un webhook Make / n8n avec les données du contenu à partager.
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const { _type, _id, title, slug, excerpt, publishedAt, shareOnSocials } = body
 
-    // Vérification sécurité — token secret
     const authHeader = req.headers.get('authorization')
     const expectedToken = `Bearer ${process.env.WEBHOOK_SECRET}`
     if (process.env.WEBHOOK_SECRET && authHeader !== expectedToken) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
-    // Ne partager que si le flag est activé dans Sanity
     if (!shareOnSocials) {
       return NextResponse.json({ skipped: true, reason: 'shareOnSocials is false' })
     }
 
     const webhookUrl = process.env.SOCIAL_SHARE_WEBHOOK_URL
     if (!webhookUrl) {
-      console.log('[SOCIAL-SHARE] No webhook URL configured. Payload:', { _id, title })
+      console.log('[SOCIAL-SHARE] No webhook URL configured. Payload:', { _id, title, _type })
       return NextResponse.json({ success: true, note: 'No webhook configured' })
     }
 
-    // Envoyer les données au webhook Make / n8n
+    const slugValue = getSlugValue(slug)
+    const contentPath = getContentPath(_type, slugValue)
+    if (!contentPath) {
+      return NextResponse.json(
+        { error: `Type de contenu non supporté pour le partage: ${_type}` },
+        { status: 400 }
+      )
+    }
+
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ateliersdelasource.fr'
+
     const payload = {
       type: _type,
       id: _id,
       title,
-      slug: slug?.current,
+      slug: slugValue,
       excerpt,
       publishedAt,
-      url: `${process.env.NEXT_PUBLIC_SITE_URL}/blog/${slug?.current}`,
+      url: `${siteUrl}${contentPath}`,
     }
 
     const res = await fetch(webhookUrl, {
@@ -44,9 +76,11 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify(payload),
     })
 
-    if (!res.ok) throw new Error(`Webhook responded with ${res.status}`)
+    if (!res.ok) {
+      throw new Error(`Webhook responded with ${res.status}`)
+    }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, payload })
   } catch (err) {
     console.error('[SOCIAL-SHARE ERROR]', err)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })

@@ -127,6 +127,14 @@ export const activityDocument = defineType({
     defineField({ name: 'isPublished', title: 'Publié', type: 'boolean', group: 'display', initialValue: true }),
     defineField({ name: 'isFeatured', title: 'Mis en avant', type: 'boolean', group: 'display', initialValue: false }),
     defineField({ name: 'homeOrder', title: 'Ordre sur la homepage', type: 'number', group: 'display', initialValue: 99 }),
+    defineField({
+      name: 'shareOnSocials',
+      title: 'Partager sur Facebook',
+      type: 'boolean',
+      group: 'display',
+      initialValue: false,
+      description: 'Enverra ce contenu au webhook Make / n8n pour publication Facebook.',
+    }),
     defineField({ name: 'seo', title: 'SEO', type: 'seo', group: 'seo' }),
   ],
   preview: {
