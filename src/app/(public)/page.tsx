@@ -126,7 +126,7 @@ function buildFounderData(
     name: getStringValue(person?.name, fallback.name),
     role: getStringValue(person?.role, fallback.role),
     bio: getStringValue(person?.shortBio, fallback.bio),
-    imageUrl: person?.photo ? imageUrl(person.photo, 1200, 900) || fallback.imageUrl : fallback.imageUrl,
+    imageUrl: fallback.imageUrl,
     isPlaceholder: fallback.isPlaceholder,
   }
 }
@@ -199,7 +199,7 @@ export default async function HomePage() {
       name: 'Gabriel',
       role: 'Comédien · Thérapeute',
       bio: "Comédien et animateur de stages de développement personnel, Gabriel vous accompagne dans une exploration de vous-même à travers le théâtre, la biographie et l'expression. Un chemin humain, créatif et profond.",
-      imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80',
+      imageUrl: '/images/founders/gabriel-home.jpg',
     }),
     activities: gabrielActivities.length > 0 ? gabrielActivities : FALLBACK_GABRIEL_ACTIVITIES,
   }
@@ -209,7 +209,7 @@ export default async function HomePage() {
       name: 'Amélie',
       role: 'Praticienne · Hôte du lieu',
       bio: 'Amélie vous accueille dans cet espace de douceur et de ressourcement. Elle propose des soins corporels et des informations pratiques pour votre séjour sur le lieu. Ses offres seront détaillées prochainement.',
-      imageUrl: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=800&q=80',
+      imageUrl: '/images/founders/amelie-home.jpg',
       isPlaceholder: amelieActivities.length === 0,
     }),
     activities: amelieActivities.length > 0 ? amelieActivities : FALLBACK_AMELIE_ACTIVITIES,

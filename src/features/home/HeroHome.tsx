@@ -12,7 +12,7 @@ type HeroHomeProps = {
 
 const FALLBACK_TITLE = 'Les Ateliers\nde la Source'
 const FALLBACK_SUBTITLE = 'Un lieu de ressourcement, de création et de transformation. Des propositions humaines, profondes et vivantes.'
-const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80'
+const FALLBACK_IMAGE = '/images/hero-bambou.jpg'
 
 export function HeroHome({ title, subtitle, imageUrl }: HeroHomeProps) {
   const [visible, setVisible] = useState(true)

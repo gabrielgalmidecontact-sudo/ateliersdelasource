@@ -78,8 +78,8 @@ export function AboutPage() {
             <FadeIn delay={200} slideX>
               <div className="rounded-sm overflow-hidden">
                 <img
-                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80"
-                  alt="Gabriel"
+                  src="/images/founders/histoire.jpg"
+                  alt="Les Ateliers de la Source"
                   className="w-full aspect-[4/3] object-cover"
                 />
               </div>
@@ -88,29 +88,51 @@ export function AboutPage() {
 
           {/* Gabriel detail */}
           <FadeIn delay={0} className="mt-20 pt-16 border-t border-[#D4C4A8]">
-            <p className="text-xs font-sans uppercase tracking-widest text-[#C8912A] mb-3">Gabriel</p>
-            <h2 className="font-serif text-2xl text-[#5C3D2E] mb-5">Comédien, thérapeute, conteur</h2>
-            <div className="space-y-4 font-sans text-sm text-[#2D1F14] leading-relaxed max-w-2xl">
-              <p>
-                Gabriel est comédien de formation. Il propose des stages de développement personnel (Théâtre des Doubles Karmiques), des entretiens biographiques, des ateliers d&apos;expression parlée et corporelle, ainsi que des spectacles (Rêves à 100 000 euros, La Vision de Dante).
-              </p>
-              <p>
-                Formé pendant 3 ans à l&apos;accompagnement biographique auprès de Cyr Boé, il mêle dans son travail une approche artistique et thérapeutique, toujours au service de la transformation personnelle.
-              </p>
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,320px)_1fr] gap-10 items-start">
+              <div className="rounded-sm overflow-hidden max-w-sm">
+                <img
+                  src="/images/founders/gabriel-about.jpg"
+                  alt="Gabriel"
+                  className="w-full aspect-[4/3] object-cover"
+                />
+              </div>
+              <div>
+                <p className="text-xs font-sans uppercase tracking-widest text-[#C8912A] mb-3">Gabriel</p>
+                <h2 className="font-serif text-2xl text-[#5C3D2E] mb-5">Comédien, thérapeute, conteur</h2>
+                <div className="space-y-4 font-sans text-sm text-[#2D1F14] leading-relaxed max-w-2xl">
+                  <p>
+                    Gabriel est comédien de formation. Il propose des stages de développement personnel (Théâtre des Doubles Karmiques), des entretiens biographiques, des ateliers d&apos;expression parlée et corporelle, ainsi que des spectacles (Rêves à 100 000 euros, La Vision de Dante).
+                  </p>
+                  <p>
+                    Formé pendant 3 ans à l&apos;accompagnement biographique auprès de Cyr Boé, il mêle dans son travail une approche artistique et thérapeutique, toujours au service de la transformation personnelle.
+                  </p>
+                </div>
+              </div>
             </div>
           </FadeIn>
 
           {/* Amélie detail */}
           <FadeIn delay={0} className="mt-16 pt-16 border-t border-[#D4C4A8]">
-            <p className="text-xs font-sans uppercase tracking-widest text-[#C8912A] mb-3">Amélie</p>
-            <h2 className="font-serif text-2xl text-[#5C3D2E] mb-5">Praticienne, hôte du lieu</h2>
-            <div className="space-y-4 font-sans text-sm text-[#2D1F14] leading-relaxed max-w-2xl">
-              <p>
-                Amélie accueille les participants et propose des soins corporels dans son espace dédié, ainsi que des informations pour l&apos;hébergement et l&apos;accès au lieu.
-              </p>
-              <p className="text-[#7A6355] italic">
-                Ses propositions détaillées seront disponibles prochainement, dès l&apos;ouverture de son espace (prévue début juin).
-              </p>
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,320px)_1fr] gap-10 items-start">
+              <div className="rounded-sm overflow-hidden max-w-sm">
+                <img
+                  src="/images/founders/amelie-about.jpg"
+                  alt="Amélie"
+                  className="w-full aspect-[4/3] object-cover"
+                />
+              </div>
+              <div>
+                <p className="text-xs font-sans uppercase tracking-widest text-[#C8912A] mb-3">Amélie</p>
+                <h2 className="font-serif text-2xl text-[#5C3D2E] mb-5">Praticienne, hôte du lieu</h2>
+                <div className="space-y-4 font-sans text-sm text-[#2D1F14] leading-relaxed max-w-2xl">
+                  <p>
+                    Amélie accueille les participants et propose des soins corporels dans son espace dédié, ainsi que des informations pour l&apos;hébergement et l&apos;accès au lieu.
+                  </p>
+                  <p className="text-[#7A6355] italic">
+                    Ses propositions détaillées seront disponibles prochainement, dès l&apos;ouverture de son espace (prévue début juin).
+                  </p>
+                </div>
+              </div>
             </div>
           </FadeIn>
 
