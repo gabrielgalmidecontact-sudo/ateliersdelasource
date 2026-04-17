@@ -147,6 +147,7 @@ function normalizeActivityForUi(activity: Activity, events: Event[] = []) {
     duration?: unknown
     price?: unknown
     coverImage?: unknown
+    heroImage?: unknown
     participants?: unknown
     location?: unknown
     excerpt?: unknown
@@ -165,9 +166,11 @@ function normalizeActivityForUi(activity: Activity, events: Event[] = []) {
     price: getPrice(raw.price),
     location: getStringValue(raw.location, 'Lieu à confirmer'),
     type: 'Activité',
-    imageUrl: raw.coverImage
-      ? imageUrl(raw.coverImage, 1600, 900) || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80'
-      : 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80',
+    imageUrl: raw.heroImage
+      ? imageUrl(raw.heroImage, 1600, 900) || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80'
+      : raw.coverImage
+        ? imageUrl(raw.coverImage, 1600, 900) || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80'
+        : 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&q=80',
     nextEventDate: findNextEventDateForActivity(activity, events),
   }
 }

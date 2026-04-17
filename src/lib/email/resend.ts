@@ -332,11 +332,15 @@ export async function sendReservationPracticalEmail(params: {
       </p>
       <p style="margin:0 0 12px;font-family:Arial,sans-serif;font-size:14px;color:#2D1F14;line-height:1.8;">
         <strong>En train :</strong> prendre un billet jusqu’à <strong>Toulouse Matabiau</strong>, puis le bus jusqu’à <strong>Boulogne-sur-Gesse</strong> (terminus). Le trajet en bus dure environ <strong>2h15</strong>.<br />
-        <a href="https://www.sncf-connect.com/" target="_blank" rel="noopener noreferrer" style="color:#C8912A;text-decoration:none;">Réserver un train →</a>
+        <a href="https://www.sncf-connect.com/" target="_blank" rel="noopener noreferrer" style="color:#C8912A;text-decoration:none;">Réserver un train →</a><br />
+        <a href="https://plan.lio-occitanie.fr/" target="_blank" rel="noopener noreferrer" style="color:#C8912A;text-decoration:none;">Lien liO bus →</a><br />
+        <span style="color:#7A6355;">Important : vérifiez les horaires auprès de la gare routière Pierre Sémard, adjacente à la gare Toulouse Matabiau, en appelant le <strong>3634</strong>. Les horaires peuvent être compliqués à décrypter.</span>
       </p>
       <p style="margin:0 0 12px;font-family:Arial,sans-serif;font-size:14px;color:#2D1F14;line-height:1.8;">
-        <strong>En avion :</strong> arrivée à <strong>Toulouse Blagnac</strong>, puis rejoindre <strong>Toulouse Matabiau</strong> avant de prendre le bus jusqu’à <strong>Boulogne-sur-Gesse</strong>.<br />
-        <a href="https://www.toulouse.aeroport.fr/transports-et-acces/transports-en-commun" target="_blank" rel="noopener noreferrer" style="color:#C8912A;text-decoration:none;">Accès depuis l’aéroport de Toulouse Blagnac →</a>
+        <strong>En avion :</strong> arrivée à <strong>Toulouse Blagnac</strong>, puis rejoindre <strong>Toulouse Matabiau</strong> <strong>en navette</strong> avant de prendre le bus jusqu’à <strong>Boulogne-sur-Gesse</strong>.<br />
+        <a href="https://www.toulouse.aeroport.fr/transports-et-acces/transports-en-commun" target="_blank" rel="noopener noreferrer" style="color:#C8912A;text-decoration:none;">Accès depuis l’aéroport de Toulouse Blagnac →</a><br />
+        <a href="https://plan.lio-occitanie.fr/" target="_blank" rel="noopener noreferrer" style="color:#C8912A;text-decoration:none;">Lien liO bus →</a><br />
+        <span style="color:#7A6355;">Important : vérifiez les horaires auprès de la gare routière Pierre Sémard, adjacente à la gare Toulouse Matabiau, en appelant le <strong>3634</strong>. Les horaires peuvent être compliqués à décrypter.</span>
       </p>
       <p style="margin:0 0 12px;font-family:Arial,sans-serif;font-size:14px;color:#2D1F14;line-height:1.8;">
         <strong>Transport local :</strong> réseau Tisséo, liO ligne 365, taxi ou VTC selon votre organisation.<br />

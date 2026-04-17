@@ -92,11 +92,21 @@ export const activityDocument = defineType({
     }),
     defineField({
       name: 'coverImage',
-      title: 'Image principale',
+      title: 'Image de carte / présentation',
       type: 'image',
       group: 'content',
       options: { hotspot: true },
       fields: [{ name: 'alt', type: 'string', title: 'Texte alternatif' }],
+      description: 'Utilisée dans les listes et cartes d’activités.',
+    }),
+    defineField({
+      name: 'heroImage',
+      title: 'Image bannière',
+      type: 'image',
+      group: 'content',
+      options: { hotspot: true },
+      fields: [{ name: 'alt', type: 'string', title: 'Texte alternatif' }],
+      description: 'Utilisée en grand visuel sur la page détail de l’activité. Si vide, l’image de carte sera utilisée.',
     }),
     defineField({
       name: 'gallery',
