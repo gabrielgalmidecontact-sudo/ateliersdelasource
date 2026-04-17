@@ -200,6 +200,14 @@ export function AdminDashboard() {
       badge: null,
       color: '#7A6355',
     },
+    {
+      href: '/admin/newsletter',
+      icon: <Feather size={20} />,
+      label: 'Newsletter',
+      description: 'Abonnés et envoi des campagnes',
+      badge: null,
+      color: '#4A5E3A',
+    },
   ]
 
   return (
