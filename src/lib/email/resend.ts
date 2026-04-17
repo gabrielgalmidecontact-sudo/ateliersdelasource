@@ -327,16 +327,21 @@ export async function sendReservationPracticalEmail(params: {
         <strong>Adresse :</strong> 977 chemin de Betbèze, 65230 Thermes-Magnoac, France
       </p>
       <p style="margin:0 0 12px;font-family:Arial,sans-serif;font-size:14px;color:#2D1F14;line-height:1.8;">
-        <strong>En voiture :</strong> vous pouvez entrer directement cette adresse dans votre GPS.
+        <strong>En voiture :</strong> vous pouvez entrer directement cette adresse dans votre GPS.<br />
+        <a href="https://maps.google.com/?q=977+chemin+de+Betbeze+65230+Thermes-Magnoac" target="_blank" rel="noopener noreferrer" style="color:#C8912A;text-decoration:none;">Ouvrir dans Google Maps →</a>
       </p>
       <p style="margin:0 0 12px;font-family:Arial,sans-serif;font-size:14px;color:#2D1F14;line-height:1.8;">
-        <strong>En train :</strong> prendre un billet jusqu’à <strong>Toulouse Matabiau</strong>, puis le bus jusqu’à <strong>Boulogne-sur-Gesse</strong> (terminus). Le trajet en bus dure environ <strong>2h15</strong>.
+        <strong>En train :</strong> prendre un billet jusqu’à <strong>Toulouse Matabiau</strong>, puis le bus jusqu’à <strong>Boulogne-sur-Gesse</strong> (terminus). Le trajet en bus dure environ <strong>2h15</strong>.<br />
+        <a href="https://www.sncf-connect.com/" target="_blank" rel="noopener noreferrer" style="color:#C8912A;text-decoration:none;">Réserver un train →</a>
       </p>
       <p style="margin:0 0 12px;font-family:Arial,sans-serif;font-size:14px;color:#2D1F14;line-height:1.8;">
-        <strong>En avion :</strong> arrivée à <strong>Toulouse Blagnac</strong>, puis rejoindre <strong>Toulouse Matabiau</strong> avant de prendre le bus jusqu’à <strong>Boulogne-sur-Gesse</strong>.
+        <strong>En avion :</strong> arrivée à <strong>Toulouse Blagnac</strong>, puis rejoindre <strong>Toulouse Matabiau</strong> avant de prendre le bus jusqu’à <strong>Boulogne-sur-Gesse</strong>.<br />
+        <a href="https://www.toulouse.aeroport.fr/transports-et-acces/transports-en-commun" target="_blank" rel="noopener noreferrer" style="color:#C8912A;text-decoration:none;">Accès depuis l’aéroport de Toulouse Blagnac →</a>
       </p>
       <p style="margin:0 0 12px;font-family:Arial,sans-serif;font-size:14px;color:#2D1F14;line-height:1.8;">
-        <strong>Transport local :</strong> réseau Tisséo, liO ligne 365, taxi ou VTC selon votre organisation.
+        <strong>Transport local :</strong> réseau Tisséo, liO ligne 365, taxi ou VTC selon votre organisation.<br />
+        <a href="https://plan.lio-occitanie.fr/" target="_blank" rel="noopener noreferrer" style="color:#C8912A;text-decoration:none;">Voir les horaires liO →</a><br />
+        <a href="https://www.nav-eco.fr/reserver-un-chauffeur?keyword=taxi%20aeroport%20toulouse" target="_blank" rel="noopener noreferrer" style="color:#C8912A;text-decoration:none;">Réserver un chauffeur / VTC →</a>
       </p>
       <p style="margin:0 0 12px;font-family:Arial,sans-serif;font-size:14px;color:#2D1F14;line-height:1.8;">
         <strong>Navette / accueil :</strong> merci de nous communiquer votre heure d’arrivée à Boulogne-sur-Gesse si vous arrivez en transport collectif. Nous pourrons venir vous chercher, les Ateliers étant à environ 5 minutes.
